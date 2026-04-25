@@ -101,7 +101,7 @@ final planSavingsProvider =
 
   final allRecords = await sl<GetAllPrayerRecordsUseCase>().execute();
 
-  int totalSeconds = 0;
+  int totalMinutes = 0;
   for (final PrayerRecord record in allRecords) {
     // plan.id로 연결된 기록만 집계 (id null이면 기간 기반 fallback)
     final matched = plan.id != null
@@ -110,12 +110,13 @@ final planSavingsProvider =
     if (matched) {
       final duration = record.prayerDuration;
       if (duration != null && !duration.isNegative) {
-        totalSeconds += duration.inSeconds;
+        // 초 단위 버림: 분 단위만 금액 계산에 반영
+        totalMinutes += duration.inMinutes;
       }
     }
   }
 
-  return plan.calcEarned(totalSeconds);
+  return plan.calcEarned(totalMinutes * 60);
 });
 
 /// bankPlanId가 없는 레거시 레코드를 기간으로 매칭

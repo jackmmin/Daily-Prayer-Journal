@@ -18,7 +18,7 @@ class PrayerRecordCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  static final _timeFormat = DateFormat('HH:mm:ss');
+  static final _timeFormat = DateFormat('HH:mm');
 
   @override
   Widget build(BuildContext context) {
@@ -119,10 +119,8 @@ class PrayerRecordCard extends StatelessWidget {
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
 
     if (hours > 0) return '$hours시간 $minutes분';
-    if (minutes > 0) return '$minutes분 $seconds초';
-    return '$seconds초';
+    return '$minutes분';
   }
 }
