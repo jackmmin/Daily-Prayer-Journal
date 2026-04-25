@@ -132,9 +132,10 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
           const Gap(24),
           TextField(
             controller: _titleCtrl,
-            maxLength: 30,
+            maxLength: 20,
+            inputFormatters: [LengthLimitingTextInputFormatter(20)],
             decoration: const InputDecoration(
-              labelText: '계획 이름 (선택)',
+              labelText: '계획 이름 (선택, 최대 20자)',
               hintText: '예) 새벽기도 100일',
               isDense: true,
               border: OutlineInputBorder(),

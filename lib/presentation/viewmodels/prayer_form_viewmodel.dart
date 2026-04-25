@@ -151,7 +151,6 @@ class PrayerFormViewModel extends StateNotifier<PrayerFormState> {
       content: content.trim(),
       startTime: effectiveStartTime,
       endTime: effectiveEndTime,
-      createdAt: state.editingRecord?.createdAt ?? DateTime.now(),
       bankPlanId: effectiveBankPlanId,
     );
 

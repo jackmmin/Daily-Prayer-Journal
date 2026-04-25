@@ -23,11 +23,12 @@ class BankPlanModel {
     )
   ''';
 
+  /// seconds 단위로 저장 (milliseconds 대비 ~25% 절감)
   static Map<String, dynamic> toMap(BankPlan plan) => {
         if (plan.id != null) columnId: plan.id,
         columnTitle: plan.title,
-        columnStartDate: plan.startDate.millisecondsSinceEpoch,
-        columnEndDate: plan.endDate.millisecondsSinceEpoch,
+        columnStartDate: plan.startDate.millisecondsSinceEpoch ~/ 1000,
+        columnEndDate: plan.endDate.millisecondsSinceEpoch ~/ 1000,
         columnMinutes: plan.minutes,
         columnAmount: plan.amount,
       };
@@ -35,8 +36,8 @@ class BankPlanModel {
   static BankPlan fromMap(Map<String, dynamic> map) => BankPlan(
         id: map[columnId] as int,
         title: (map[columnTitle] as String?) ?? '',
-        startDate: DateTime.fromMillisecondsSinceEpoch(map[columnStartDate] as int),
-        endDate: DateTime.fromMillisecondsSinceEpoch(map[columnEndDate] as int),
+        startDate: DateTime.fromMillisecondsSinceEpoch((map[columnStartDate] as int) * 1000),
+        endDate: DateTime.fromMillisecondsSinceEpoch((map[columnEndDate] as int) * 1000),
         minutes: map[columnMinutes] as int,
         amount: map[columnAmount] as int,
       );

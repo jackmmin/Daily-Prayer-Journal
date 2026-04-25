@@ -65,8 +65,8 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
         _deleteUseCase = deleteUseCase,
         _getRecordDatesUseCase = getRecordDatesUseCase,
         super(PrayerListState(
-          startDate: initialStart ?? _dateOnly(DateTime.now()),
-          endDate: initialEnd ?? _dateOnly(DateTime.now()),
+          startDate: initialStart ?? _dateOnly(DateTime.now().toLocal()),
+          endDate: initialEnd ?? _dateOnly(DateTime.now().toLocal()),
           bankPlanId: bankPlanId,
         )) {
     loadRecords();

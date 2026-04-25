@@ -32,7 +32,7 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
     final db = await _db;
     final maps = await db.query(
       PrayerRecordModel.tableName,
-      orderBy: '${PrayerRecordModel.columnCreatedAt} DESC',
+      orderBy: '${PrayerRecordModel.columnStartTime} DESC',
     );
     return maps.map(PrayerRecordModel.fromMap).toList();
   }
@@ -44,12 +44,12 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     final where = StringBuffer(
-      // 날짜 분류 기준: createdAt(생성 시각)이 아닌 startTime(기도 시작 시각) 기준
+      // 날짜 분류 기준: startTime(기도 시작 시각) 기준, seconds 단위로 비교
       '${PrayerRecordModel.columnStartTime} >= ? AND ${PrayerRecordModel.columnStartTime} < ?',
     );
     final whereArgs = <dynamic>[
-      startOfDay.millisecondsSinceEpoch,
-      endOfDay.millisecondsSinceEpoch,
+      startOfDay.millisecondsSinceEpoch ~/ 1000,
+      endOfDay.millisecondsSinceEpoch ~/ 1000,
     ];
 
     if (bankPlanId != null) {
@@ -73,16 +73,16 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
     int? bankPlanId,
   }) async {
     final db = await _db;
-    final startMs = DateTime(start.year, start.month, start.day).millisecondsSinceEpoch;
-    final endMs = DateTime(end.year, end.month, end.day)
+    final startSec = DateTime(start.year, start.month, start.day).millisecondsSinceEpoch ~/ 1000;
+    final endSec = DateTime(end.year, end.month, end.day)
         .add(const Duration(days: 1))
-        .millisecondsSinceEpoch;
+        .millisecondsSinceEpoch ~/ 1000;
 
     final where = StringBuffer(
-      // 날짜 분류 기준: createdAt(생성 시각)이 아닌 startTime(기도 시작 시각) 기준
+      // 날짜 분류 기준: startTime(기도 시작 시각) 기준, seconds 단위로 비교
       '${PrayerRecordModel.columnStartTime} >= ? AND ${PrayerRecordModel.columnStartTime} < ?',
     );
-    final whereArgs = <dynamic>[startMs, endMs];
+    final whereArgs = <dynamic>[startSec, endSec];
 
     if (bankPlanId != null) {
       where.write(' AND ${PrayerRecordModel.columnBankPlanId} = ?');
@@ -152,9 +152,9 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
       whereArgs: bankPlanId != null ? [bankPlanId] : null,
     );
     return maps.map((row) {
-      // 날짜 분류 기준: createdAt(생성 시각)이 아닌 startTime(기도 시작 시각) 기준
-      final ms = row[PrayerRecordModel.columnStartTime] as int;
-      final dt = DateTime.fromMillisecondsSinceEpoch(ms);
+      // 날짜 분류 기준: startTime(기도 시작 시각) 기준, seconds → ms 변환
+      final sec = row[PrayerRecordModel.columnStartTime] as int;
+      final dt = DateTime.fromMillisecondsSinceEpoch(sec * 1000);
       return DateTime(dt.year, dt.month, dt.day);
     }).toSet();
   }

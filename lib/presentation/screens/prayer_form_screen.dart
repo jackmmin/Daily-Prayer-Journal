@@ -1,6 +1,7 @@
 // lib/presentation/screens/prayer_form_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
@@ -145,26 +146,44 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
     return TextFormField(
       controller: _titleController,
       decoration: const InputDecoration(
-        labelText: '기도 제목 *',
+        labelText: '기도 제목 * (최대 20자)',
         prefixIcon: Icon(Icons.title),
         hintText: '기도 제목을 입력하세요',
+        counterText: '',
       ),
+      maxLength: 20,
+      inputFormatters: [LengthLimitingTextInputFormatter(20)],
       textInputAction: TextInputAction.next,
       validator: (v) => (v == null || v.trim().isEmpty) ? '기도 제목을 입력해주세요' : null,
     );
   }
 
   Widget _buildContentField() {
-    return TextFormField(
-      controller: _contentController,
-      decoration: const InputDecoration(
-        labelText: '기도 내용',
-        prefixIcon: Icon(Icons.edit_note),
-        hintText: '기도 내용을 입력하세요',
-        alignLabelWithHint: true,
-      ),
-      maxLines: 6,
-      textInputAction: TextInputAction.newline,
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _contentController,
+      builder: (context, value, _) {
+        final count = value.text.length;
+        return TextFormField(
+          controller: _contentController,
+          decoration: InputDecoration(
+            labelText: '기도 내용',
+            prefixIcon: const Icon(Icons.edit_note),
+            hintText: '기도 내용을 입력하세요',
+            alignLabelWithHint: true,
+            counterText: '',
+            // 1000자 초과 시 빨간색으로 카운터 표시
+            suffixText: '$count/1000',
+            suffixStyle: TextStyle(
+              fontSize: 12,
+              color: count > 1000 ? Colors.red : Colors.grey,
+            ),
+          ),
+          maxLines: 6,
+          maxLength: 1000,
+          inputFormatters: [LengthLimitingTextInputFormatter(1000)],
+          textInputAction: TextInputAction.newline,
+        );
+      },
     );
   }
 

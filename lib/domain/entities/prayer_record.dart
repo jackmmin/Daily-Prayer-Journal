@@ -6,7 +6,6 @@ class PrayerRecord {
   final String content;
   final DateTime startTime;
   final DateTime? endTime;
-  final DateTime createdAt;
 
   /// 연결된 기도통장 계획 ID (null이면 미연결)
   final int? bankPlanId;
@@ -17,7 +16,6 @@ class PrayerRecord {
     required this.content,
     required this.startTime,
     this.endTime,
-    required this.createdAt,
     this.bankPlanId,
   });
 
@@ -38,7 +36,6 @@ class PrayerRecord {
     String? content,
     DateTime? startTime,
     DateTime? endTime,
-    DateTime? createdAt,
     bool clearEndTime = false,
     int? bankPlanId,
     bool clearBankPlanId = false,
@@ -49,7 +46,6 @@ class PrayerRecord {
       content: content ?? this.content,
       startTime: startTime ?? this.startTime,
       endTime: clearEndTime ? null : (endTime ?? this.endTime),
-      createdAt: createdAt ?? this.createdAt,
       bankPlanId: clearBankPlanId ? null : (bankPlanId ?? this.bankPlanId),
     );
   }
@@ -66,5 +62,5 @@ class PrayerRecord {
 
   @override
   String toString() =>
-      'PrayerRecord(id: $id, title: $title, startTime: $startTime, endTime: $endTime)';
+      'PrayerRecord(id: $id, title: $title, startTime: $startTime, endTime: $endTime, bankPlanId: $bankPlanId)';
 }

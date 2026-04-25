@@ -10,7 +10,6 @@ class PrayerRecordModel {
   static const String columnContent = 'content';
   static const String columnStartTime = 'start_time';
   static const String columnEndTime = 'end_time';
-  static const String columnCreatedAt = 'created_at';
   static const String columnBankPlanId = 'bank_plan_id';
 
   static const String createTableSql = '''
@@ -20,19 +19,20 @@ class PrayerRecordModel {
       $columnContent TEXT NOT NULL,
       $columnStartTime INTEGER NOT NULL,
       $columnEndTime INTEGER,
-      $columnCreatedAt INTEGER NOT NULL,
       $columnBankPlanId INTEGER
     )
   ''';
 
+  /// seconds 단위로 저장 (milliseconds 대비 ~25% 절감)
   static Map<String, dynamic> toMap(PrayerRecord record) {
     return {
       if (record.id != null) columnId: record.id,
       columnTitle: record.title,
       columnContent: record.content,
-      columnStartTime: record.startTime.millisecondsSinceEpoch,
-      columnEndTime: record.endTime?.millisecondsSinceEpoch,
-      columnCreatedAt: record.createdAt.millisecondsSinceEpoch,
+      columnStartTime: record.startTime.millisecondsSinceEpoch ~/ 1000,
+      columnEndTime: record.endTime != null
+          ? record.endTime!.millisecondsSinceEpoch ~/ 1000
+          : null,
       columnBankPlanId: record.bankPlanId,
     };
   }
@@ -43,14 +43,11 @@ class PrayerRecordModel {
       title: map[columnTitle] as String,
       content: map[columnContent] as String,
       startTime: DateTime.fromMillisecondsSinceEpoch(
-        map[columnStartTime] as int,
+        (map[columnStartTime] as int) * 1000,
       ),
       endTime: map[columnEndTime] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map[columnEndTime] as int)
+          ? DateTime.fromMillisecondsSinceEpoch((map[columnEndTime] as int) * 1000)
           : null,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        map[columnCreatedAt] as int,
-      ),
       bankPlanId: map[columnBankPlanId] as int?,
     );
   }
