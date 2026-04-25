@@ -8,15 +8,17 @@ import '../../core/providers/bank_plan_provider.dart';
 import '../../domain/entities/bank_plan.dart';
 
 /// 목록 화면 상단 기도통장 배너.
-/// 진행 중인 계획이 있으면 해당 계획의 누적 금액을 표시한다.
+/// [selectedPlan]이 지정되면 해당 계획을 표시하고, 없으면 활성 계획 중 첫 번째를 표시한다.
 class PrayerBankBanner extends ConsumerWidget {
-  const PrayerBankBanner({super.key});
+  /// 특정 계획에서 진입한 경우 해당 계획을 직접 전달한다.
+  final BankPlan? selectedPlan;
+
+  const PrayerBankBanner({super.key, this.selectedPlan});
 
   static final _dateFmt = DateFormat('M월 d일');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final plansAsync = ref.watch(bankPlanProvider);
     final color = Theme.of(context).colorScheme.primary;
 
     return Container(
@@ -29,16 +31,26 @@ class PrayerBankBanner extends ConsumerWidget {
           end: Alignment.bottomRight,
         ),
       ),
-      child: plansAsync.when(
-        loading: () => const _BannerLoading(),
-        error: (_, __) => const _BannerError(),
-        data: (plans) {
-          final active = plans.where((p) => p.isActive).toList();
-          if (active.isEmpty) return const _BannerNoPlan();
-          // 진행 중인 계획이 여러 개면 첫 번째만 표시
-          return _BannerActivePlan(plan: active.first);
-        },
-      ),
+      child: _buildContent(ref),
+    );
+  }
+
+  Widget _buildContent(WidgetRef ref) {
+    // 계획이 직접 지정된 경우 provider 조회 없이 바로 표시
+    if (selectedPlan != null) {
+      return _BannerActivePlan(plan: selectedPlan!);
+    }
+
+    final plansAsync = ref.watch(bankPlanProvider);
+    return plansAsync.when(
+      loading: () => const _BannerLoading(),
+      error: (_, __) => const _BannerError(),
+      data: (plans) {
+        final active = plans.where((p) => p.isActive).toList();
+        if (active.isEmpty) return const _BannerNoPlan();
+        // 진행 중인 계획이 여러 개면 첫 번째만 표시
+        return _BannerActivePlan(plan: active.first);
+      },
     );
   }
 }

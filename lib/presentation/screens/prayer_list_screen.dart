@@ -69,7 +69,7 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       body: Column(
         children: [
           if (widget.initialPlan != null) _PlanInfoHeader(plan: widget.initialPlan!),
-          const PrayerBankBanner(),
+          PrayerBankBanner(selectedPlan: widget.initialPlan),
           DateRangeSelectorBar(
             startDate: state.startDate,
             endDate: state.endDate,
