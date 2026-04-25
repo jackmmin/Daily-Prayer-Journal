@@ -9,7 +9,7 @@ import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_list_viewmodel.dart';
 import '../widgets/prayer_record_card.dart';
 import '../widgets/date_range_selector_bar.dart';
-import '../widgets/calendar_picker_dialog.dart';
+import '../widgets/calendar_picker_dialog.dart' show CalendarPickerDialog, DateRangeResult;
 import '../widgets/prayer_bank_banner.dart';
 import 'prayer_form_screen.dart';
 
@@ -282,7 +282,7 @@ class _BottomActionBar extends StatelessWidget {
   });
 
   Future<void> _openCalendar(BuildContext context) async {
-    final picked = await showDialog<DateTime>(
+    final picked = await showDialog<DateRangeResult>(
       context: context,
       builder: (_) => CalendarPickerDialog(
         selectedDate: startDate,
@@ -290,8 +290,7 @@ class _BottomActionBar extends StatelessWidget {
       ),
     );
     if (picked != null) {
-      // 선택한 날짜 하루를 범위로 설정
-      await onRangeChanged(picked, picked);
+      await onRangeChanged(picked.start, picked.end);
     }
   }
 
