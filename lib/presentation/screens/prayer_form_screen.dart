@@ -40,6 +40,7 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
       _contentController.text = record.content;
       _startTime = record.startTime;
       _endTime = record.endTime;
+      if (record.endTime != null) _manualTimeEdited = true;
     } else {
       _startTime = DateTime.now();
     }
@@ -295,11 +296,12 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
   Widget? _buildTimeSummary(PrayerFormState state) {
     Duration? duration;
 
-    if (_useTimer && state.isTimerStopped && state.elapsedDuration.inSeconds > 0) {
+    if (_useTimer && state.isTimerStopped && state.elapsedDuration.inMinutes > 0) {
       duration = state.elapsedDuration;
-    } else if (!_useTimer && _endTime != null) {
+    } else if (!_useTimer && _manualTimeEdited && _endTime != null) {
+      // 사용자가 직접 수정한 경우에만 직접입력 기도시간 표시
       final diff = _endTime!.difference(_startTime);
-      if (diff.isNegative || diff.inSeconds == 0) return null;
+      if (diff.isNegative || diff.inMinutes == 0) return null;
       duration = diff;
     }
 
@@ -307,15 +309,12 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
 
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
 
     String label;
     if (hours > 0) {
       label = '$hours시간 $minutes분';
-    } else if (minutes > 0) {
-      label = '$minutes분 $seconds초';
     } else {
-      label = '$seconds초';
+      label = '$minutes분';
     }
 
     return Container(
