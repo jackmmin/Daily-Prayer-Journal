@@ -1,10 +1,10 @@
 // lib/presentation/screens/prayer_form_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
+import '../../core/utils/emoji_length_formatter.dart';
 import '../../domain/entities/bank_plan.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_form_viewmodel.dart';
@@ -143,18 +143,29 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
   }
 
   Widget _buildTitleField() {
-    return TextFormField(
-      controller: _titleController,
-      decoration: const InputDecoration(
-        labelText: '기도 제목 * (최대 20자)',
-        prefixIcon: Icon(Icons.title),
-        hintText: '기도 제목을 입력하세요',
-        counterText: '',
-      ),
-      maxLength: 20,
-      inputFormatters: [LengthLimitingTextInputFormatter(20)],
-      textInputAction: TextInputAction.next,
-      validator: (v) => (v == null || v.trim().isEmpty) ? '기도 제목을 입력해주세요' : null,
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _titleController,
+      builder: (context, value, _) {
+        final count = value.text.characters.length;
+        return TextFormField(
+          controller: _titleController,
+          decoration: InputDecoration(
+            labelText: '기도 제목 * (최대 20자)',
+            prefixIcon: const Icon(Icons.title),
+            hintText: '기도 제목을 입력하세요',
+            counterText: '',
+            suffixText: '$count/20',
+            suffixStyle: TextStyle(
+              fontSize: 12,
+              color: count > 20 ? Colors.red : Colors.grey,
+            ),
+          ),
+          // maxLength 미사용: EmojiLengthFormatter가 grapheme 단위로 제한
+          inputFormatters: const [EmojiLengthFormatter(20)],
+          textInputAction: TextInputAction.next,
+          validator: (v) => (v == null || v.trim().isEmpty) ? '기도 제목을 입력해주세요' : null,
+        );
+      },
     );
   }
 
@@ -162,7 +173,7 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: _contentController,
       builder: (context, value, _) {
-        final count = value.text.length;
+        final count = value.text.characters.length;
         return TextFormField(
           controller: _contentController,
           decoration: InputDecoration(
@@ -179,8 +190,8 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
             ),
           ),
           maxLines: 6,
-          maxLength: 1000,
-          inputFormatters: [LengthLimitingTextInputFormatter(1000)],
+          // maxLength 미사용: EmojiLengthFormatter가 grapheme 단위로 제한
+          inputFormatters: const [EmojiLengthFormatter(1000)],
           textInputAction: TextInputAction.newline,
         );
       },

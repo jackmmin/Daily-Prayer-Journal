@@ -1,5 +1,8 @@
 // lib/data/datasources/local/database_helper.dart
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -8,7 +11,7 @@ import '../../models/prayer_record_model.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'prayer_journal.db';
-  static const int _databaseVersion = 5;
+  static const int _databaseVersion = 6;
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -106,6 +109,39 @@ class DatabaseHelper {
         ''');
         await txn.execute('DROP TABLE bank_plans');
         await txn.execute('ALTER TABLE bank_plans_new RENAME TO bank_plans');
+      });
+    }
+    // v5 → v6: content TEXT → BLOB (gzip 압축)
+    // 기존 TEXT 데이터를 UTF-8 바이트(또는 gzip)로 변환 후 재삽입
+    if (oldVersion < 6) {
+      await db.transaction((txn) async {
+        await txn.execute('''
+          CREATE TABLE prayer_records_v6 (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content BLOB NOT NULL,
+            start_time INTEGER NOT NULL,
+            end_time INTEGER,
+            bank_plan_id INTEGER
+          )
+        ''');
+        final rows = await txn.query('prayer_records');
+        for (final row in rows) {
+          final text = row['content'] as String;
+          final bytes = utf8.encode(text);
+          // 500 bytes 초과 시 gzip 압축
+          final blob = bytes.length > 500 ? GZipCodec().encode(bytes) : bytes;
+          await txn.insert('prayer_records_v6', {
+            'id': row['id'],
+            'title': row['title'],
+            'content': blob,
+            'start_time': row['start_time'],
+            'end_time': row['end_time'],
+            'bank_plan_id': row['bank_plan_id'],
+          });
+        }
+        await txn.execute('DROP TABLE prayer_records');
+        await txn.execute('ALTER TABLE prayer_records_v6 RENAME TO prayer_records');
       });
     }
   }
