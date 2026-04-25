@@ -2,12 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_list_viewmodel.dart';
 import '../widgets/prayer_record_card.dart';
 import '../widgets/date_selector_bar.dart';
+import '../widgets/calendar_picker_dialog.dart';
 import 'prayer_form_screen.dart';
 
 class PrayerListScreen extends ConsumerWidget {
@@ -21,12 +21,6 @@ class PrayerListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('기도 일지'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_month_outlined),
-            onPressed: () => _pickDate(context, ref, state.selectedDate),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -39,10 +33,19 @@ class PrayerListScreen extends ConsumerWidget {
           ),
         ],
       ),
+      // 기록 추가 FAB: 우측 하단
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_add',
         onPressed: () => _navigateToForm(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('기도 기록'),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      // 캘린더 FAB: 좌측 하단
+      bottomNavigationBar: _CalendarFab(
+        selectedDate: state.selectedDate,
+        recordDates: state.recordDates,
+        onDateChanged: vm.changeDate,
       ),
     );
   }
@@ -120,22 +123,6 @@ class PrayerListScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _pickDate(
-    BuildContext context,
-    WidgetRef ref,
-    DateTime current,
-  ) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) {
-      ref.read(prayerListViewModelProvider.notifier).changeDate(picked);
-    }
-  }
-
   Future<void> _navigateToForm(
     BuildContext context,
     WidgetRef ref, {
@@ -175,5 +162,52 @@ class PrayerListScreen extends ConsumerWidget {
     if (confirmed == true && record.id != null) {
       vm.deleteRecord(record.id!);
     }
+  }
+}
+
+/// 좌측 하단 캘린더 버튼 (bottomNavigationBar 영역에 배치)
+class _CalendarFab extends StatelessWidget {
+  final DateTime selectedDate;
+  final Set<DateTime> recordDates;
+  final ValueChanged<DateTime> onDateChanged;
+
+  const _CalendarFab({
+    required this.selectedDate,
+    required this.recordDates,
+    required this.onDateChanged,
+  });
+
+  Future<void> _openCalendar(BuildContext context) async {
+    final picked = await showDialog<DateTime>(
+      context: context,
+      builder: (_) => CalendarPickerDialog(
+        selectedDate: selectedDate,
+        recordDates: recordDates,
+      ),
+    );
+    if (picked != null) {
+      onDateChanged(picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // FAB과 같은 높이에서 좌측에 배치하기 위해 SafeArea + Padding 사용
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16, bottom: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            FloatingActionButton(
+              heroTag: 'fab_calendar',
+              onPressed: () => _openCalendar(context),
+              mini: false,
+              child: const Icon(Icons.calendar_month_outlined),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

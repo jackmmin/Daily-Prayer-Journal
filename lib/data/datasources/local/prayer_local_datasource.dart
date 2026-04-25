@@ -13,6 +13,7 @@ abstract interface class PrayerLocalDataSource {
   Future<int> insertRecord(PrayerRecord record);
   Future<void> updateRecord(PrayerRecord record);
   Future<void> deleteRecord(int id);
+  Future<Set<DateTime>> getRecordDates();
 }
 
 class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
@@ -93,5 +94,20 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
       where: '${PrayerRecordModel.columnId} = ?',
       whereArgs: [id],
     );
+  }
+
+  @override
+  Future<Set<DateTime>> getRecordDates() async {
+    final db = await _db;
+    // createdAt 컬럼만 조회해 날짜(년/월/일)만 추출
+    final maps = await db.query(
+      PrayerRecordModel.tableName,
+      columns: [PrayerRecordModel.columnCreatedAt],
+    );
+    return maps.map((row) {
+      final ms = row[PrayerRecordModel.columnCreatedAt] as int;
+      final dt = DateTime.fromMillisecondsSinceEpoch(ms);
+      return DateTime(dt.year, dt.month, dt.day);
+    }).toSet();
   }
 }

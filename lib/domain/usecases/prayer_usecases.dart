@@ -42,3 +42,11 @@ class DeletePrayerRecordUseCase {
 
   Future<void> execute(int id) => _repository.deleteRecord(id);
 }
+
+class GetRecordDatesUseCase {
+  final PrayerRepository _repository;
+
+  const GetRecordDatesUseCase(this._repository);
+
+  Future<Set<DateTime>> execute() => _repository.getRecordDates();
+}

@@ -29,4 +29,5 @@ Future<void> initDependencies() async {
   sl.registerFactory(() => GetPrayerRecordsByDateUseCase(sl()));
   sl.registerFactory(() => SavePrayerRecordUseCase(sl()));
   sl.registerFactory(() => DeletePrayerRecordUseCase(sl()));
+  sl.registerFactory(() => GetRecordDatesUseCase(sl()));
 }

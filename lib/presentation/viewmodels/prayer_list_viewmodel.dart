@@ -11,12 +11,15 @@ class PrayerListState {
   final bool isLoading;
   final String? errorMessage;
   final DateTime selectedDate;
+  /// 기도 기록이 존재하는 날짜 집합 (년/월/일 정규화)
+  final Set<DateTime> recordDates;
 
   const PrayerListState({
     this.records = const [],
     this.isLoading = false,
     this.errorMessage,
     required this.selectedDate,
+    this.recordDates = const {},
   });
 
   PrayerListState copyWith({
@@ -24,6 +27,7 @@ class PrayerListState {
     bool? isLoading,
     String? errorMessage,
     DateTime? selectedDate,
+    Set<DateTime>? recordDates,
     bool clearError = false,
   }) {
     return PrayerListState(
@@ -31,6 +35,7 @@ class PrayerListState {
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       selectedDate: selectedDate ?? this.selectedDate,
+      recordDates: recordDates ?? this.recordDates,
     );
   }
 }
@@ -38,12 +43,15 @@ class PrayerListState {
 class PrayerListViewModel extends StateNotifier<PrayerListState> {
   final GetPrayerRecordsByDateUseCase _getByDateUseCase;
   final DeletePrayerRecordUseCase _deleteUseCase;
+  final GetRecordDatesUseCase _getRecordDatesUseCase;
 
   PrayerListViewModel({
     required GetPrayerRecordsByDateUseCase getByDateUseCase,
     required DeletePrayerRecordUseCase deleteUseCase,
+    required GetRecordDatesUseCase getRecordDatesUseCase,
   })  : _getByDateUseCase = getByDateUseCase,
         _deleteUseCase = deleteUseCase,
+        _getRecordDatesUseCase = getRecordDatesUseCase,
         super(PrayerListState(selectedDate: DateTime.now())) {
     loadRecords();
   }
@@ -51,8 +59,16 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
   Future<void> loadRecords() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final records = await _getByDateUseCase.execute(state.selectedDate);
-      state = state.copyWith(records: records, isLoading: false);
+      // 선택된 날짜의 기록과 전체 기록 날짜를 동시에 로드
+      final results = await Future.wait([
+        _getByDateUseCase.execute(state.selectedDate),
+        _getRecordDatesUseCase.execute(),
+      ]);
+      state = state.copyWith(
+        records: results[0] as List<PrayerRecord>,
+        recordDates: results[1] as Set<DateTime>,
+        isLoading: false,
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -81,5 +97,6 @@ final prayerListViewModelProvider =
   return PrayerListViewModel(
     getByDateUseCase: sl<GetPrayerRecordsByDateUseCase>(),
     deleteUseCase: sl<DeletePrayerRecordUseCase>(),
+    getRecordDatesUseCase: sl<GetRecordDatesUseCase>(),
   );
 });

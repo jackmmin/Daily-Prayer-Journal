@@ -31,4 +31,7 @@ class PrayerRepositoryImpl implements PrayerRepository {
 
   @override
   Future<void> deleteRecord(int id) => _localDataSource.deleteRecord(id);
+
+  @override
+  Future<Set<DateTime>> getRecordDates() => _localDataSource.getRecordDates();
 }
