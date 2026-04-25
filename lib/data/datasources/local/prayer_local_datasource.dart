@@ -147,7 +147,7 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
     final db = await _db;
     final maps = await db.query(
       PrayerRecordModel.tableName,
-      columns: [PrayerRecordModel.columnCreatedAt],
+      columns: [PrayerRecordModel.columnStartTime],
       where: bankPlanId != null ? '${PrayerRecordModel.columnBankPlanId} = ?' : null,
       whereArgs: bankPlanId != null ? [bankPlanId] : null,
     );
