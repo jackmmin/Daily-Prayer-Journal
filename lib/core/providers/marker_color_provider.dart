@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _kMarkerColorKey = 'marker_color';
+const _kMarkerColorPrefix = 'marker_color_'; // + yyyy-MM-dd
 
 /// 선택 가능한 dot 마커 색상 목록
 const List<Color> markerColorOptions = [
@@ -18,33 +18,61 @@ const List<Color> markerColorOptions = [
   Color(0xFFEC407A), // 분홍
 ];
 
-class MarkerColorNotifier extends StateNotifier<Color> {
-  MarkerColorNotifier() : super(markerColorOptions.first) {
-    _load();
+String _dateKey(DateTime date) =>
+    '$_kMarkerColorPrefix${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
+
+Color _colorFromARGB32(int argb) => Color.fromARGB(
+      (argb >> 24) & 0xFF,
+      (argb >> 16) & 0xFF,
+      (argb >> 8) & 0xFF,
+      argb & 0xFF,
+    );
+
+/// 날짜별 dot 마커 색상을 관리하는 Notifier.
+/// 상태: Map<날짜(정규화), Color>
+class MarkerColorNotifier extends StateNotifier<Map<DateTime, Color>> {
+  MarkerColorNotifier() : super({}) {
+    _loadAll();
   }
 
-  Future<void> _load() async {
+  /// SharedPreferences에서 모든 날짜별 색상 로드
+  Future<void> _loadAll() async {
     final prefs = await SharedPreferences.getInstance();
-    final argb = prefs.getInt(_kMarkerColorKey);
-    if (argb != null) {
-      // toARGB32()로 저장한 값을 컴포넌트로 분해해 복원
-      state = Color.fromARGB(
-        (argb >> 24) & 0xFF,
-        (argb >> 16) & 0xFF,
-        (argb >> 8) & 0xFF,
-        argb & 0xFF,
+    final keys = prefs.getKeys().where((k) => k.startsWith(_kMarkerColorPrefix));
+    final map = <DateTime, Color>{};
+    for (final key in keys) {
+      final dateStr = key.substring(_kMarkerColorPrefix.length);
+      final parts = dateStr.split('-');
+      if (parts.length != 3) continue;
+      final date = DateTime(
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+        int.parse(parts[2]),
       );
+      final argb = prefs.getInt(key);
+      if (argb != null) map[date] = _colorFromARGB32(argb);
     }
+    state = map;
   }
 
-  Future<void> setColor(Color color) async {
-    state = color;
+  /// 특정 날짜의 dot 색상 변경 및 저장
+  Future<void> setColor(DateTime date, Color color) async {
+    final normalized = DateTime(date.year, date.month, date.day);
+    state = {...state, normalized: color};
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_kMarkerColorKey, color.toARGB32());
+    await prefs.setInt(_dateKey(normalized), color.toARGB32());
+  }
+
+  /// 특정 날짜의 dot 색상 조회 (없으면 기본색)
+  Color colorFor(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    return state[normalized] ?? markerColorOptions.first;
   }
 }
 
 final markerColorProvider =
-    StateNotifierProvider<MarkerColorNotifier, Color>((ref) {
+    StateNotifierProvider<MarkerColorNotifier, Map<DateTime, Color>>((ref) {
   return MarkerColorNotifier();
 });
