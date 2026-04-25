@@ -30,15 +30,6 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
   void initState() {
     super.initState();
     _bankPlanId = widget.initialPlan?.id;
-    // 계획이 지정된 경우 계획 전체 기간을 초기 범위로 설정
-    if (widget.initialPlan != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final plan = widget.initialPlan!;
-        ref
-            .read(prayerListViewModelProvider(_bankPlanId).notifier)
-            .setToPlanRange(plan.startDate, plan.endDate);
-      });
-    }
   }
 
   @override
