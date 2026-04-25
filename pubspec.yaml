@@ -1,0 +1,37 @@
+name: prayer_journal
+description: 하루의 기도 기록 앱
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # SQLite
+  sqflite: ^2.3.2
+  path: ^1.9.0
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # DI
+  get_it: ^7.7.0
+
+  # UI
+  cupertino_icons: ^1.0.6
+  intl: ^0.19.0
+  gap: ^3.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.9
+  riverpod_generator: ^2.4.3
+
+flutter:
+  uses-material-design: true
