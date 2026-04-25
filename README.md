@@ -3,7 +3,7 @@
 하루의 기도를 기록하는 Flutter 앱입니다.
 
 ## UPDATE_HISTORY
-![Static Badge](UPDATE_HISTORY.md)
+![https://img.shields.io/badge/UPDATE_HISTORY-Link-blue](UPDATE_HISTORY.md)
 
 ## 시작하기
 
