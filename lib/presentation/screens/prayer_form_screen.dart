@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
+import '../../domain/entities/bank_plan.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_form_viewmodel.dart';
 import '../widgets/timer_widget.dart';
@@ -11,8 +12,10 @@ import '../widgets/time_picker_field.dart';
 
 class PrayerFormScreen extends ConsumerStatefulWidget {
   final PrayerRecord? editingRecord;
+  // 기도통장 계획에서 진입한 경우 해당 계획
+  final BankPlan? bankPlan;
 
-  const PrayerFormScreen({super.key, this.editingRecord});
+  const PrayerFormScreen({super.key, this.editingRecord, this.bankPlan});
 
   @override
   ConsumerState<PrayerFormScreen> createState() => _PrayerFormScreenState();
@@ -102,6 +105,10 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.bankPlan != null) ...[
+                _buildBankPlanBanner(widget.bankPlan!),
+                const Gap(16),
+              ],
               _buildTitleField(),
               const Gap(16),
               _buildContentField(),
@@ -111,6 +118,49 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBankPlanBanner(BankPlan plan) {
+    final color = Theme.of(context).colorScheme.primary;
+    final dateFmt = '${plan.startDate.year}년 ${plan.startDate.month}월 ${plan.startDate.day}일'
+        ' ~ ${plan.endDate.year}년 ${plan.endDate.month}월 ${plan.endDate.day}일';
+    final amountStr = plan.amount.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.savings_outlined, color: color, size: 22),
+          const Gap(10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '기도통장 계획',
+                  style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+                ),
+                const Gap(2),
+                Text(
+                  dateFmt,
+                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+                Text(
+                  '${plan.minutes}분 기도 → $amountStr원 적립',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

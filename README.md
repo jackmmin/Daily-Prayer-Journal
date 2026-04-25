@@ -1,4 +1,4 @@
-# 기도 일지 (Prayer Journal)
+# 기도통장 (Prayer Journal)
 
 하루의 기도를 기록하는 Flutter 앱입니다.
 

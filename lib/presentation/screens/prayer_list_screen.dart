@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/bank_plan_provider.dart';
+import '../../domain/entities/bank_plan.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_list_viewmodel.dart';
 import '../widgets/prayer_record_card.dart';
@@ -12,17 +13,53 @@ import '../widgets/calendar_picker_dialog.dart';
 import '../widgets/prayer_bank_banner.dart';
 import 'prayer_form_screen.dart';
 
-class PrayerListScreen extends ConsumerWidget {
-  const PrayerListScreen({super.key});
+class PrayerListScreen extends ConsumerStatefulWidget {
+  /// null이면 전체 기록, 지정하면 해당 계획 날짜로 초기 이동
+  final BankPlan? initialPlan;
+
+  const PrayerListScreen({super.key, this.initialPlan});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PrayerListScreen> createState() => _PrayerListScreenState();
+}
+
+class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 계획이 지정된 경우 계획 시작일(또는 오늘)로 날짜 이동
+    if (widget.initialPlan != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final plan = widget.initialPlan!;
+        final today = DateTime.now();
+        final target = today.isAfter(plan.startDate) && !today.isAfter(plan.endDate)
+            ? today
+            : plan.startDate;
+        ref.read(prayerListViewModelProvider.notifier).changeDate(target);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(prayerListViewModelProvider);
     final vm = ref.read(prayerListViewModelProvider.notifier);
+    final plansAsync = ref.watch(bankPlanProvider);
+
+    // 선택된 날짜가 활성 계획 기간 내에 있는지 확인
+    final bool canAddRecord = plansAsync.maybeWhen(
+      data: (plans) => _isDateInAnyPlan(state.selectedDate, plans),
+      orElse: () => false,
+    );
+
+    // 계획이 지정된 경우 AppBar 타이틀에 계획 기간 표시
+    final title = widget.initialPlan != null
+        ? '기도 일지 (${_planLabel(widget.initialPlan!)})'
+        : '기도통장';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('기도 일지'),
+        title: Text(title),
       ),
       body: Column(
         children: [
@@ -32,7 +69,7 @@ class PrayerListScreen extends ConsumerWidget {
             onDateChanged: vm.changeDate,
           ),
           Expanded(
-            child: _buildBody(context, ref, state, vm),
+            child: _buildBody(context, state, vm, canAddRecord),
           ),
         ],
       ),
@@ -41,16 +78,34 @@ class PrayerListScreen extends ConsumerWidget {
         selectedDate: state.selectedDate,
         recordDates: state.recordDates,
         onDateChanged: vm.changeDate,
-        onAddRecord: () => _navigateToForm(context, ref),
+        canAddRecord: canAddRecord,
+        onAddRecord: () => _navigateToForm(context),
       ),
     );
   }
 
+  /// 계획 기간 레이블 (예: "4월 1일 ~ 4월 30일")
+  static String _planLabel(BankPlan plan) {
+    String fmt(DateTime d) => '${d.month}월 ${d.day}일';
+    return '${fmt(plan.startDate)} ~ ${fmt(plan.endDate)}';
+  }
+
+  /// 선택된 날짜가 하나 이상의 계획 기간에 포함되는지 확인
+  bool _isDateInAnyPlan(DateTime date, List<BankPlan> plans) {
+    if (plans.isEmpty) return false;
+    final d = DateTime(date.year, date.month, date.day);
+    return plans.any((plan) {
+      final start = DateTime(plan.startDate.year, plan.startDate.month, plan.startDate.day);
+      final end = DateTime(plan.endDate.year, plan.endDate.month, plan.endDate.day);
+      return !d.isBefore(start) && !d.isAfter(end);
+    });
+  }
+
   Widget _buildBody(
     BuildContext context,
-    WidgetRef ref,
     PrayerListState state,
     PrayerListViewModel vm,
+    bool canAddRecord,
   ) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -76,20 +131,22 @@ class PrayerListScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.church_outlined,
+              canAddRecord ? Icons.church_outlined : Icons.lock_outline,
               size: 72,
               color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
-              '오늘의 기도 기록이 없습니다',
+              canAddRecord ? '기도 기록이 없습니다' : '기도통장 계획이 없습니다',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Colors.grey,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              '+ 버튼을 눌러 기도를 기록해보세요',
+              canAddRecord
+                  ? '+ 버튼을 눌러 기도를 기록해보세요'
+                  : '상단 배너에서 기도통장 계획을 먼저 세워주세요',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey,
                   ),
@@ -110,8 +167,8 @@ class PrayerListScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: PrayerRecordCard(
               record: record,
-              onTap: () => _navigateToForm(context, ref, record: record),
-              onDelete: () => _confirmDelete(context, ref, vm, record),
+              onTap: () => _navigateToForm(context, record: record),
+              onDelete: () => _confirmDelete(context, vm, record),
             ),
           );
         },
@@ -120,8 +177,7 @@ class PrayerListScreen extends ConsumerWidget {
   }
 
   Future<void> _navigateToForm(
-    BuildContext context,
-    WidgetRef ref, {
+    BuildContext context, {
     PrayerRecord? record,
   }) async {
     await Navigator.of(context).push(
@@ -136,7 +192,6 @@ class PrayerListScreen extends ConsumerWidget {
 
   Future<void> _confirmDelete(
     BuildContext context,
-    WidgetRef ref,
     PrayerListViewModel vm,
     PrayerRecord record,
   ) async {
@@ -172,10 +227,14 @@ class _BottomActionBar extends StatelessWidget {
   final ValueChanged<DateTime> onDateChanged;
   final VoidCallback onAddRecord;
 
+  /// 선택된 날짜에 활성 계획이 있을 때만 true
+  final bool canAddRecord;
+
   const _BottomActionBar({
     required this.selectedDate,
     required this.recordDates,
     required this.onDateChanged,
+    required this.canAddRecord,
     required this.onAddRecord,
   });
 
@@ -205,7 +264,8 @@ class _BottomActionBar extends StatelessWidget {
             ),
             FloatingActionButton.extended(
               heroTag: 'fab_add',
-              onPressed: onAddRecord,
+              // 계획이 없으면 버튼 비활성화
+              onPressed: canAddRecord ? onAddRecord : null,
               icon: const Icon(Icons.add),
               label: const Text('기도 기록'),
             ),

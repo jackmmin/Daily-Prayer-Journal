@@ -6,7 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/di/injection_container.dart';
 import 'core/theme/app_theme.dart';
-import 'presentation/screens/prayer_list_screen.dart';
+import 'presentation/screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,10 +26,10 @@ class PrayerJournalApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '기도 일지',
+      title: '기도통장',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const PrayerListScreen(),
+      home: const HomeScreen(),
     );
   }
 }
