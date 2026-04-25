@@ -313,8 +313,10 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
     if (_useTimer && state.isTimerStopped && state.elapsedDuration.inMinutes > 0) {
       duration = state.elapsedDuration;
     } else if (!_useTimer && _manualTimeEdited && _endTime != null) {
-      // 사용자가 직접 수정한 경우에만 직접입력 기도시간 표시
-      final diff = _endTime!.difference(_startTime);
+      // 초를 버리고 분 단위로만 계산 (14:54xx ~ 14:58xx = 4분)
+      final startMin = DateTime(_startTime.year, _startTime.month, _startTime.day, _startTime.hour, _startTime.minute);
+      final endMin   = DateTime(_endTime!.year,  _endTime!.month,  _endTime!.day,  _endTime!.hour,  _endTime!.minute);
+      final diff = endMin.difference(startMin);
       if (diff.isNegative || diff.inMinutes == 0) return null;
       duration = diff;
     }
