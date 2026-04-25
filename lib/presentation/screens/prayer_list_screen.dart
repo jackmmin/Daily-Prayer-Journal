@@ -111,7 +111,7 @@ class PrayerListScreen extends ConsumerWidget {
             child: PrayerRecordCard(
               record: record,
               onTap: () => _navigateToForm(context, ref, record: record),
-              onDelete: () => _confirmDelete(context, vm, record),
+              onDelete: () => _confirmDelete(context, ref, vm, record),
             ),
           );
         },
@@ -136,6 +136,7 @@ class PrayerListScreen extends ConsumerWidget {
 
   Future<void> _confirmDelete(
     BuildContext context,
+    WidgetRef ref,
     PrayerListViewModel vm,
     PrayerRecord record,
   ) async {
