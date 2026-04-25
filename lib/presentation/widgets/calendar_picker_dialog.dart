@@ -7,6 +7,8 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/providers/marker_color_provider.dart';
 import '../../domain/usecases/prayer_usecases.dart';
+import 'calendar/range_banner.dart';
+import 'calendar/color_palette.dart';
 
 /// 날짜 범위 선택 결과 타입
 typedef DateRangeResult = ({DateTime start, DateTime end});
@@ -241,8 +243,7 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
             ),
             const Divider(height: 16),
 
-            // 선택된 범위 미리보기 배너
-            _RangeBanner(
+            RangeBanner(
               start: _rangeStart,
               end: rangeEnd,
               previewTitle: _previewTitle,
@@ -255,7 +256,7 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
               child: _colorEditingDate != null
                   ? Padding(
                       padding: const EdgeInsets.only(top: 12),
-                      child: _ColorPalette(
+                      child: ColorPalette(
                         editingDate: _colorEditingDate!,
                         currentColor: notifier.colorFor(_colorEditingDate!),
                         onColorSelected: (color) async {
@@ -306,145 +307,6 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
           color: inRange ? colorScheme.primary : colorScheme.onSurface,
         ),
       ),
-    );
-  }
-}
-
-/// 선택된 범위 / 미리보기 배너
-class _RangeBanner extends StatelessWidget {
-  final DateTime start;
-  final DateTime? end;
-  final String? previewTitle;
-  final bool isLoading;
-
-  const _RangeBanner({
-    required this.start,
-    required this.end,
-    required this.previewTitle,
-    required this.isLoading,
-  });
-
-  static String _fmt(DateTime d) => '${d.month}/${d.day}';
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    String dateLabel;
-    if (end == null || isSameDay(start, end!)) {
-      dateLabel = _fmt(start);
-    } else {
-      dateLabel = '${_fmt(start)} ~ ${_fmt(end!)}';
-    }
-
-    Widget content;
-    if (isLoading) {
-      content = SizedBox(
-        height: 14,
-        width: 14,
-        child: CircularProgressIndicator(
-          strokeWidth: 1.5,
-          color: colorScheme.primary,
-        ),
-      );
-    } else if (previewTitle == null || previewTitle!.isEmpty) {
-      content = Text(
-        '$dateLabel  기도 기록 없음',
-        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-      );
-    } else {
-      content = Row(
-        children: [
-          Icon(Icons.book_outlined, size: 13, color: colorScheme.primary),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              '$dateLabel  $previewTitle',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: content,
-    );
-  }
-}
-
-/// dot 마커 색상 선택 팔레트
-class _ColorPalette extends StatelessWidget {
-  final DateTime editingDate;
-  final Color currentColor;
-  final ValueChanged<Color> onColorSelected;
-
-  const _ColorPalette({
-    required this.editingDate,
-    required this.currentColor,
-    required this.onColorSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            '${editingDate.month}/${editingDate.day} 기록 색상',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: markerColorOptions.map((color) {
-            final isSelected = currentColor.toARGB32() == color.toARGB32();
-            return GestureDetector(
-              onTap: () => onColorSelected(color),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: isSelected
-                      ? Border.all(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          width: 2.5,
-                        )
-                      : null,
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.5),
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                          )
-                        ]
-                      : null,
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
     );
   }
 }

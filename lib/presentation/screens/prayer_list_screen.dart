@@ -9,8 +9,9 @@ import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_list_viewmodel.dart';
 import '../widgets/prayer_record_card.dart';
 import '../widgets/date_range_selector_bar.dart';
-import '../widgets/calendar_picker_dialog.dart' show CalendarPickerDialog, DateRangeResult;
 import '../widgets/prayer_bank_banner.dart';
+import '../widgets/prayer_list/plan_info_header.dart';
+import '../widgets/prayer_list/bottom_action_bar.dart';
 import 'prayer_form_screen.dart';
 
 class PrayerListScreen extends ConsumerStatefulWidget {
@@ -49,29 +50,23 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       orElse: () => false,
     );
 
-    const disableNext = false;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('기도 일지'),
-      ),
+      appBar: AppBar(title: const Text('기도 일지')),
       body: Column(
         children: [
-          if (widget.initialPlan != null) _PlanInfoHeader(plan: widget.initialPlan!),
+          if (widget.initialPlan != null) PlanInfoHeader(plan: widget.initialPlan!),
           PrayerBankBanner(selectedPlan: widget.initialPlan),
           DateRangeSelectorBar(
             startDate: state.startDate,
             endDate: state.endDate,
             onPrev: vm.movePrev,
             onNext: vm.moveNext,
-            disableNext: disableNext,
+            disableNext: false,
           ),
-          Expanded(
-            child: _buildBody(context, state, vm, canAddRecord),
-          ),
+          Expanded(child: _buildBody(context, state, vm, canAddRecord)),
         ],
       ),
-      bottomNavigationBar: _BottomActionBar(
+      bottomNavigationBar: PrayerListBottomActionBar(
         startDate: state.startDate,
         endDate: state.endDate,
         recordDates: state.recordDates,
@@ -130,17 +125,13 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
             const SizedBox(height: 16),
             Text(
               '등록된 기도 일지가 없습니다',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
             ),
             if (canAddRecord) ...[
               const SizedBox(height: 8),
               Text(
                 '+ 버튼을 눌러 기도를 기록해보세요',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                    ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
               ),
             ],
           ],
@@ -168,10 +159,7 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     );
   }
 
-  Future<void> _navigateToForm(
-    BuildContext context, {
-    PrayerRecord? record,
-  }) async {
+  Future<void> _navigateToForm(BuildContext context, {PrayerRecord? record}) async {
     // 새 기록 작성 시 현재 선택된 날짜를 기본 시작시간 날짜로 전달
     final selectedDate = record == null
         ? ref.read(prayerListViewModelProvider(_bankPlanId)).startDate
@@ -216,104 +204,5 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       await vm.deleteRecord(record.id!);
       ref.invalidate(planSavingsProvider);
     }
-  }
-}
-
-/// 기도일지 목록 상단 계획 정보 헤더
-class _PlanInfoHeader extends StatelessWidget {
-  final BankPlan plan;
-
-  const _PlanInfoHeader({required this.plan});
-
-  static String _fmt(DateTime d) => '${d.month}월 ${d.day}일';
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: colorScheme.primaryContainer,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            plan.title.isNotEmpty ? plan.title : '기도통장 계획',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${_fmt(plan.startDate)} ~ ${_fmt(plan.endDate)}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 하단 액션 바: 좌측 캘린더 버튼 + 우측 기도 기록 버튼
-class _BottomActionBar extends StatelessWidget {
-  final DateTime startDate;
-  final DateTime endDate;
-  final Set<DateTime> recordDates;
-  final Future<void> Function(DateTime, DateTime) onRangeChanged;
-  final VoidCallback onAddRecord;
-  final bool canAddRecord;
-
-  const _BottomActionBar({
-    required this.startDate,
-    required this.endDate,
-    required this.recordDates,
-    required this.onRangeChanged,
-    required this.canAddRecord,
-    required this.onAddRecord,
-  });
-
-  Future<void> _openCalendar(BuildContext context) async {
-    final picked = await showDialog<DateRangeResult>(
-      context: context,
-      builder: (_) => CalendarPickerDialog(
-        selectedDate: startDate,
-        recordDates: recordDates,
-        allowFuture: true,
-      ),
-    );
-    if (picked != null) {
-      await onRangeChanged(picked.start, picked.end);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            FloatingActionButton(
-              heroTag: 'fab_calendar',
-              onPressed: () => _openCalendar(context),
-              child: const Icon(Icons.calendar_month_outlined),
-            ),
-            FloatingActionButton.extended(
-              heroTag: 'fab_add',
-              // 기도통장 계획 기간 밖이면 버튼 비활성화
-              onPressed: canAddRecord ? onAddRecord : null,
-              backgroundColor: canAddRecord ? null : Colors.grey.shade400,
-              foregroundColor: canAddRecord ? null : Colors.white,
-              icon: const Icon(Icons.add),
-              label: const Text('기도 기록'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
