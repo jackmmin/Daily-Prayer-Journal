@@ -6,7 +6,10 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/providers/bank_plan_provider.dart';
+import '../../core/di/injection_container.dart';
+import '../../core/services/excel_export_service.dart';
 import '../../domain/entities/bank_plan.dart';
+import '../../domain/usecases/prayer_usecases.dart';
 
 class BankPlanCard extends ConsumerWidget {
   final BankPlan plan;
@@ -81,9 +84,20 @@ class BankPlanCard extends ConsumerWidget {
                     onSelected: (v) {
                       if (v == 'edit') onEdit();
                       if (v == 'delete') _confirmDelete(context, ref);
+                      if (v == 'export') _exportExcel(context);
                     },
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'edit', child: Text('수정')),
+                      PopupMenuItem(
+                        value: 'export',
+                        child: Row(
+                          children: [
+                            Icon(Icons.download_rounded, size: 18, color: Colors.green),
+                            SizedBox(width: 8),
+                            Text('엑셀 다운로드', style: TextStyle(color: Colors.green)),
+                          ],
+                        ),
+                      ),
                       PopupMenuItem(
                         value: 'delete',
                         child: Text('삭제', style: TextStyle(color: Colors.red)),
@@ -156,6 +170,43 @@ class BankPlanCard extends ConsumerWidget {
     );
     if (confirmed == true && plan.id != null) {
       await ref.read(bankPlanProvider.notifier).remove(plan.id!);
+    }
+  }
+
+  Future<void> _exportExcel(BuildContext context) async {
+    // 로딩 다이얼로그 표시
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('엑셀 파일 생성 중...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // 해당 계획의 전체 기도 기록 조회 (계획 기간 전체)
+      final records = await sl<GetPrayerRecordsByDateRangeUseCase>().execute(
+        plan.startDate,
+        plan.endDate,
+        bankPlanId: plan.id,
+      );
+
+      if (context.mounted) Navigator.of(context).pop(); // 로딩 닫기
+
+      await ExcelExportService.exportPrayerRecords(plan: plan, records: records);
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // 로딩 닫기
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('내보내기 실패: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 

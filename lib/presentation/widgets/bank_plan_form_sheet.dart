@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/providers/bank_plan_provider.dart';
 import '../../domain/entities/bank_plan.dart';
+import 'calendar_picker_dialog.dart';
 
 class BankPlanFormSheet extends ConsumerStatefulWidget {
   final BankPlan? plan;
@@ -46,24 +47,21 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
     super.dispose();
   }
 
-  Future<void> _pickDate({required bool isStart}) async {
-    final initial = isStart ? _startDate : _endDate;
-    final picked = await showDatePicker(
+  Future<void> _pickDateRange({required bool isStart}) async {
+    // 탭한 쪽 날짜를 초기 선택일로 열기
+    final initialDate = isStart ? _startDate : _endDate;
+    final result = await showDialog<DateRangeResult>(
       context: context,
-      initialDate: initial,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      builder: (_) => CalendarPickerDialog(
+        selectedDate: initialDate,
+        recordDates: const {},
+        allowFuture: true,
+      ),
     );
-    if (picked == null) return;
+    if (result == null) return;
     setState(() {
-      if (isStart) {
-        _startDate = picked;
-        // 시작일이 종료일보다 늦으면 종료일을 시작일로 맞춤
-        if (_startDate.isAfter(_endDate)) _endDate = _startDate;
-      } else {
-        _endDate = picked;
-        if (_endDate.isBefore(_startDate)) _startDate = _endDate;
-      }
+      _startDate = result.start;
+      _endDate = result.end;
     });
   }
 
@@ -146,12 +144,12 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
           const Gap(16),
           Row(
             children: [
-              Expanded(child: _dateTile(label: '시작일', date: _startDate, onTap: () => _pickDate(isStart: true))),
+              Expanded(child: _dateTile(label: '시작일', date: _startDate, onTap: () => _pickDateRange(isStart: true))),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 10),
                 child: Text('~', style: TextStyle(fontSize: 18)),
               ),
-              Expanded(child: _dateTile(label: '종료일', date: _endDate, onTap: () => _pickDate(isStart: false))),
+              Expanded(child: _dateTile(label: '종료일', date: _endDate, onTap: () => _pickDateRange(isStart: false))),
             ],
           ),
           const Gap(20),

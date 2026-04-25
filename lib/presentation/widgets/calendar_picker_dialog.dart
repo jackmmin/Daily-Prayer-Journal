@@ -19,11 +19,14 @@ typedef DateRangeResult = ({DateTime start, DateTime end});
 class CalendarPickerDialog extends ConsumerStatefulWidget {
   final DateTime selectedDate;
   final Set<DateTime> recordDates;
+  /// true이면 오늘 이후 미래 날짜도 선택 가능
+  final bool allowFuture;
 
   const CalendarPickerDialog({
     super.key,
     required this.selectedDate,
     required this.recordDates,
+    this.allowFuture = false,
   });
 
   @override
@@ -85,7 +88,7 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
   }
 
   void _onDayTapped(DateTime selected, DateTime focused) {
-    if (selected.isAfter(DateTime.now())) return;
+    if (!widget.allowFuture && selected.isAfter(DateTime.now())) return;
     final normalized = DateTime(selected.year, selected.month, selected.day);
 
     setState(() {
@@ -164,7 +167,7 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
               locale: 'ko_KR',
               focusedDay: _focused,
               firstDay: DateTime(2000),
-              lastDay: DateTime.now(),
+              lastDay: widget.allowFuture ? DateTime(2100) : DateTime.now(),
               rangeStartDay: _rangeStart,
               rangeEndDay: rangeEnd,
               rangeSelectionMode: rangeEnd != null
