@@ -49,9 +49,7 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       orElse: () => false,
     );
 
-    // 다음 범위가 오늘 이후면 비활성화
-    final today = DateTime.now();
-    final disableNext = !state.endDate.isBefore(DateTime(today.year, today.month, today.day));
+    const disableNext = false;
 
     return Scaffold(
       appBar: AppBar(
@@ -283,6 +281,7 @@ class _BottomActionBar extends StatelessWidget {
       builder: (_) => CalendarPickerDialog(
         selectedDate: startDate,
         recordDates: recordDates,
+        allowFuture: true,
       ),
     );
     if (picked != null) {
