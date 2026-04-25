@@ -144,98 +144,142 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
 
   Widget _buildTimeSection(PrayerFormState state, PrayerFormViewModel vm) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const Gap(8),
-                Text(
-                  '기도 시간',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            const Gap(12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildModeButton(
-                    label: '직접 입력',
-                    icon: Icons.keyboard,
-                    isSelected: !_useTimer,
-                    onTap: () {
-                      if (_useTimer && !_manualTimeEdited) {
-                        // 직접 입력에서 수동 편집 이력이 없을 때만 타이머 시간을 필드에 반영
-                        final timerState = ref.read(prayerFormViewModelProvider(widget.editingRecord));
-                        if (timerState.timerStartTime != null) {
-                          setState(() {
-                            _startTime = timerState.timerStartTime!;
-                            if (timerState.isTimerStopped) {
-                              _endTime = timerState.timerStartTime!.add(timerState.elapsedDuration);
-                            }
-                            _useTimer = false;
-                          });
-                          return;
+      child: ExpansionTile(
+        // 기본값: 접힌 상태
+        initiallyExpanded: false,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        leading: Icon(
+          Icons.access_time,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        title: Text(
+          '기도 시간',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        trailing: _buildTimeSummary(state),
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildModeButton(
+                      label: '직접 입력',
+                      icon: Icons.keyboard,
+                      isSelected: !_useTimer,
+                      onTap: () {
+                        if (_useTimer && !_manualTimeEdited) {
+                          // 직접 입력에서 수동 편집 이력이 없을 때만 타이머 시간을 필드에 반영
+                          final timerState = ref.read(prayerFormViewModelProvider(widget.editingRecord));
+                          if (timerState.timerStartTime != null) {
+                            setState(() {
+                              _startTime = timerState.timerStartTime!;
+                              if (timerState.isTimerStopped) {
+                                _endTime = timerState.timerStartTime!.add(timerState.elapsedDuration);
+                              }
+                              _useTimer = false;
+                            });
+                            return;
+                          }
                         }
-                      }
-                      setState(() => _useTimer = false);
-                    },
+                        setState(() => _useTimer = false);
+                      },
+                    ),
                   ),
+                  const Gap(8),
+                  Expanded(
+                    child: _buildModeButton(
+                      label: '타이머 사용',
+                      icon: Icons.timer_outlined,
+                      isSelected: _useTimer,
+                      onTap: () => setState(() => _useTimer = true),
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(16),
+              if (!_useTimer) ...[
+                TimePickerField(
+                  label: '시작 시간',
+                  time: _startTime,
+                  onChanged: (t) => setState(() {
+                    _startTime = t;
+                    _manualTimeEdited = true;
+                  }),
                 ),
-                const Gap(8),
-                Expanded(
-                  child: _buildModeButton(
-                    label: '타이머 사용',
-                    icon: Icons.timer_outlined,
-                    isSelected: _useTimer,
-                    onTap: () => setState(() => _useTimer = true),
-                  ),
+                const Gap(12),
+                TimePickerField(
+                  label: '종료 시간 (선택)',
+                  time: _endTime,
+                  onChanged: (t) => setState(() {
+                    _endTime = t;
+                    _manualTimeEdited = true;
+                  }),
+                  onCleared: () => setState(() {
+                    _endTime = null;
+                    _manualTimeEdited = true;
+                  }),
+                  nullable: true,
+                ),
+              ] else ...[
+                TimerWidget(
+                  state: state,
+                  onStart: vm.startTimer,
+                  onStop: vm.stopTimer,
+                  onResume: vm.resumeTimer,
+                  onReset: vm.resetTimer,
                 ),
               ],
-            ),
-            const Gap(16),
-            if (!_useTimer) ...[
-              TimePickerField(
-                label: '시작 시간',
-                time: _startTime,
-                onChanged: (t) => setState(() {
-                  _startTime = t;
-                  _manualTimeEdited = true;
-                }),
-              ),
-              const Gap(12),
-              TimePickerField(
-                label: '종료 시간 (선택)',
-                time: _endTime,
-                onChanged: (t) => setState(() {
-                  _endTime = t;
-                  _manualTimeEdited = true;
-                }),
-                onCleared: () => setState(() {
-                  _endTime = null;
-                  _manualTimeEdited = true;
-                }),
-                nullable: true,
-              ),
-            ] else ...[
-              TimerWidget(
-                state: state,
-                onStart: vm.startTimer,
-                onStop: vm.stopTimer,
-                onResume: vm.resumeTimer,
-                onReset: vm.resetTimer,
-              ),
             ],
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 접힌 상태에서 시작/종료 시간이 모두 있을 때 기도 시간(분)을 우측에 표시
+  Widget? _buildTimeSummary(PrayerFormState state) {
+    Duration? duration;
+
+    if (_useTimer && state.isTimerStopped && state.elapsedDuration.inSeconds > 0) {
+      duration = state.elapsedDuration;
+    } else if (!_useTimer && _endTime != null) {
+      final diff = _endTime!.difference(_startTime);
+      if (diff.isNegative || diff.inSeconds == 0) return null;
+      duration = diff;
+    }
+
+    if (duration == null) return null;
+
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    String label;
+    if (hours > 0) {
+      label = '$hours시간 $minutes분';
+    } else if (minutes > 0) {
+      label = '$minutes분 $seconds초';
+    } else {
+      label = '$seconds초';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

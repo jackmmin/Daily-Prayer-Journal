@@ -3,11 +3,12 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../models/bank_plan_model.dart';
 import '../../models/prayer_record_model.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'prayer_journal.db';
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 2;
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -33,10 +34,14 @@ class DatabaseHelper {
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute(PrayerRecordModel.createTableSql);
+    await db.execute(BankPlanModel.createTableSql);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // 향후 스키마 마이그레이션 처리
+    // v1 → v2: bank_plans 테이블 추가
+    if (oldVersion < 2) {
+      await db.execute(BankPlanModel.createTableSql);
+    }
   }
 
   Future<void> close() async {

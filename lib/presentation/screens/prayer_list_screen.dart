@@ -3,11 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/bank_plan_provider.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_list_viewmodel.dart';
 import '../widgets/prayer_record_card.dart';
 import '../widgets/date_selector_bar.dart';
 import '../widgets/calendar_picker_dialog.dart';
+import '../widgets/prayer_bank_banner.dart';
 import 'prayer_form_screen.dart';
 
 class PrayerListScreen extends ConsumerWidget {
@@ -24,6 +26,7 @@ class PrayerListScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
+          const PrayerBankBanner(),
           DateSelectorBar(
             selectedDate: state.selectedDate,
             onDateChanged: vm.changeDate,
@@ -127,6 +130,8 @@ class PrayerListScreen extends ConsumerWidget {
       ),
     );
     ref.read(prayerListViewModelProvider.notifier).loadRecords();
+    // 기도 기록 변경 후 누적 금액 재계산
+    ref.invalidate(planSavingsProvider);
   }
 
   Future<void> _confirmDelete(
@@ -153,7 +158,8 @@ class PrayerListScreen extends ConsumerWidget {
       ),
     );
     if (confirmed == true && record.id != null) {
-      vm.deleteRecord(record.id!);
+      await vm.deleteRecord(record.id!);
+      ref.invalidate(planSavingsProvider);
     }
   }
 }
