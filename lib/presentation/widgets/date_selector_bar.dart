@@ -1,7 +1,6 @@
 // lib/presentation/widgets/date_selector_bar.dart
 
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 
 class DateSelectorBar extends StatelessWidget {
@@ -48,7 +47,7 @@ class DateSelectorBar extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Text(

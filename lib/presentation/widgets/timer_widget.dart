@@ -31,7 +31,7 @@ class TimerWidget extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24),
           decoration: BoxDecoration(
-            color: colorScheme.primaryContainer.withOpacity(0.5),
+            color: colorScheme.primaryContainer.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -49,7 +49,7 @@ class TimerWidget extends StatelessWidget {
                 Text(
                   _getStatusText(),
                   style: TextStyle(
-                    color: colorScheme.primary.withOpacity(0.7),
+                    color: colorScheme.primary.withValues(alpha: 0.7),
                     fontSize: 13,
                   ),
                 ),

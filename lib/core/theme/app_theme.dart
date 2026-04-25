@@ -47,11 +47,11 @@ class AppTheme {
         fillColor: _surfaceColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: _secondaryColor.withOpacity(0.5)),
+          borderSide: BorderSide(color: _secondaryColor.withValues(alpha: 0.5)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: _secondaryColor.withOpacity(0.5)),
+          borderSide: BorderSide(color: _secondaryColor.withValues(alpha: 0.5)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),

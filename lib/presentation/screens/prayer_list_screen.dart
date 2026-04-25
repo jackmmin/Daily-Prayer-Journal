@@ -33,19 +33,12 @@ class PrayerListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      // 기록 추가 FAB: 우측 하단
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'fab_add',
-        onPressed: () => _navigateToForm(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('기도 기록'),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      // 캘린더 FAB: 좌측 하단
-      bottomNavigationBar: _CalendarFab(
+      // 캘린더(좌) + 기도 기록(우) 버튼을 같은 라인에 배치
+      bottomNavigationBar: _BottomActionBar(
         selectedDate: state.selectedDate,
         recordDates: state.recordDates,
         onDateChanged: vm.changeDate,
+        onAddRecord: () => _navigateToForm(context, ref),
       ),
     );
   }
@@ -82,7 +75,7 @@ class PrayerListScreen extends ConsumerWidget {
             Icon(
               Icons.church_outlined,
               size: 72,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
@@ -165,16 +158,18 @@ class PrayerListScreen extends ConsumerWidget {
   }
 }
 
-/// 좌측 하단 캘린더 버튼 (bottomNavigationBar 영역에 배치)
-class _CalendarFab extends StatelessWidget {
+/// 하단 액션 바: 좌측 캘린더 버튼 + 우측 기도 기록 버튼
+class _BottomActionBar extends StatelessWidget {
   final DateTime selectedDate;
   final Set<DateTime> recordDates;
   final ValueChanged<DateTime> onDateChanged;
+  final VoidCallback onAddRecord;
 
-  const _CalendarFab({
+  const _BottomActionBar({
     required this.selectedDate,
     required this.recordDates,
     required this.onDateChanged,
+    required this.onAddRecord,
   });
 
   Future<void> _openCalendar(BuildContext context) async {
@@ -185,25 +180,27 @@ class _CalendarFab extends StatelessWidget {
         recordDates: recordDates,
       ),
     );
-    if (picked != null) {
-      onDateChanged(picked);
-    }
+    if (picked != null) onDateChanged(picked);
   }
 
   @override
   Widget build(BuildContext context) {
-    // FAB과 같은 높이에서 좌측에 배치하기 위해 SafeArea + Padding 사용
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.only(left: 16, bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             FloatingActionButton(
               heroTag: 'fab_calendar',
               onPressed: () => _openCalendar(context),
-              mini: false,
               child: const Icon(Icons.calendar_month_outlined),
+            ),
+            FloatingActionButton.extended(
+              heroTag: 'fab_add',
+              onPressed: onAddRecord,
+              icon: const Icon(Icons.add),
+              label: const Text('기도 기록'),
             ),
           ],
         ),
