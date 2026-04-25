@@ -62,7 +62,7 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('기도통장'),
+        title: const Text('기도 일지'),
       ),
       body: Column(
         children: [
