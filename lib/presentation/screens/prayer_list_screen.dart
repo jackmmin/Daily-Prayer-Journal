@@ -31,7 +31,14 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
   void initState() {
     super.initState();
     _bankPlanId = widget.initialPlan?.id;
+    // Provider가 이전 날짜를 캐시하고 있을 수 있으므로 진입 시 오늘 날짜로 리셋
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final today = _dateOnly(DateTime.now().toLocal());
+      ref.read(prayerListViewModelProvider(_bankPlanId).notifier).changeRange(today, today);
+    });
   }
+
+  static DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
   @override
   Widget build(BuildContext context) {
@@ -85,8 +92,6 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     final pe = _dateOnly(plan.endDate);
     return !e.isBefore(ps) && !s.isAfter(pe);
   }
-
-  static DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
   Widget _buildBody(
     BuildContext context,
