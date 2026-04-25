@@ -23,7 +23,11 @@ class PrayerRecord {
 
   Duration? get prayerDuration {
     if (endTime == null) return null;
-    return endTime!.difference(startTime);
+    // 초를 버리고 분 단위로만 계산
+    final startMin = DateTime(startTime.year, startTime.month, startTime.day, startTime.hour, startTime.minute);
+    final endMin   = DateTime(endTime!.year,  endTime!.month,  endTime!.day,  endTime!.hour,  endTime!.minute);
+    final diff = endMin.difference(startMin);
+    return diff.isNegative ? null : diff;
   }
 
   bool get isCompleted => endTime != null;

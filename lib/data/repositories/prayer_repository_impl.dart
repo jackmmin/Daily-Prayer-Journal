@@ -18,6 +18,14 @@ class PrayerRepositoryImpl implements PrayerRepository {
       _localDataSource.getRecordsByDate(date, bankPlanId: bankPlanId);
 
   @override
+  Future<List<PrayerRecord>> getRecordsByDateRange(
+    DateTime start,
+    DateTime end, {
+    int? bankPlanId,
+  }) =>
+      _localDataSource.getRecordsByDateRange(start, end, bankPlanId: bankPlanId);
+
+  @override
   Future<PrayerRecord?> getRecordById(int id) =>
       _localDataSource.getRecordById(id);
 

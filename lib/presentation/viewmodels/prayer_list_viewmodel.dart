@@ -10,7 +10,8 @@ class PrayerListState {
   final List<PrayerRecord> records;
   final bool isLoading;
   final String? errorMessage;
-  final DateTime selectedDate;
+  final DateTime startDate;
+  final DateTime endDate;
   /// 기도 기록이 존재하는 날짜 집합 (년/월/일 정규화)
   final Set<DateTime> recordDates;
   /// 필터링할 기도통장 계획 ID (null이면 전체)
@@ -20,7 +21,8 @@ class PrayerListState {
     this.records = const [],
     this.isLoading = false,
     this.errorMessage,
-    required this.selectedDate,
+    required this.startDate,
+    required this.endDate,
     this.recordDates = const {},
     this.bankPlanId,
   });
@@ -29,7 +31,8 @@ class PrayerListState {
     List<PrayerRecord>? records,
     bool? isLoading,
     String? errorMessage,
-    DateTime? selectedDate,
+    DateTime? startDate,
+    DateTime? endDate,
     Set<DateTime>? recordDates,
     bool clearError = false,
     int? bankPlanId,
@@ -38,7 +41,8 @@ class PrayerListState {
       records: records ?? this.records,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      selectedDate: selectedDate ?? this.selectedDate,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
       recordDates: recordDates ?? this.recordDates,
       bankPlanId: bankPlanId ?? this.bankPlanId,
     );
@@ -46,21 +50,23 @@ class PrayerListState {
 }
 
 class PrayerListViewModel extends StateNotifier<PrayerListState> {
-  final GetPrayerRecordsByDateUseCase _getByDateUseCase;
+  final GetPrayerRecordsByDateRangeUseCase _getByRangeUseCase;
   final DeletePrayerRecordUseCase _deleteUseCase;
   final GetRecordDatesUseCase _getRecordDatesUseCase;
 
   PrayerListViewModel({
-    required GetPrayerRecordsByDateUseCase getByDateUseCase,
+    required GetPrayerRecordsByDateRangeUseCase getByRangeUseCase,
     required DeletePrayerRecordUseCase deleteUseCase,
     required GetRecordDatesUseCase getRecordDatesUseCase,
     int? bankPlanId,
-    DateTime? initialDate,
-  })  : _getByDateUseCase = getByDateUseCase,
+    DateTime? initialStart,
+    DateTime? initialEnd,
+  })  : _getByRangeUseCase = getByRangeUseCase,
         _deleteUseCase = deleteUseCase,
         _getRecordDatesUseCase = getRecordDatesUseCase,
         super(PrayerListState(
-          selectedDate: initialDate ?? DateTime.now(),
+          startDate: initialStart ?? _weekStart(DateTime.now()),
+          endDate: initialEnd ?? _weekEnd(DateTime.now()),
           bankPlanId: bankPlanId,
         )) {
     loadRecords();
@@ -71,7 +77,7 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
     try {
       final planId = state.bankPlanId;
       final results = await Future.wait([
-        _getByDateUseCase.execute(state.selectedDate, bankPlanId: planId),
+        _getByRangeUseCase.execute(state.startDate, state.endDate, bankPlanId: planId),
         _getRecordDatesUseCase.execute(bankPlanId: planId),
       ]);
       state = state.copyWith(
@@ -87,8 +93,8 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
     }
   }
 
-  Future<void> changeDate(DateTime date) async {
-    state = state.copyWith(selectedDate: date);
+  Future<void> changeRange(DateTime start, DateTime end) async {
+    state = state.copyWith(startDate: start, endDate: end);
     await loadRecords();
   }
 
@@ -100,13 +106,48 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
       state = state.copyWith(errorMessage: '삭제에 실패했습니다.');
     }
   }
+
+  /// 이전 구간으로 이동 (같은 기간 길이만큼)
+  Future<void> movePrev() async {
+    final days = state.endDate.difference(state.startDate).inDays + 1;
+    final newEnd = state.startDate.subtract(const Duration(days: 1));
+    final newStart = newEnd.subtract(Duration(days: days - 1));
+    await changeRange(newStart, newEnd);
+  }
+
+  /// 다음 구간으로 이동
+  Future<void> moveNext() async {
+    final days = state.endDate.difference(state.startDate).inDays + 1;
+    final newStart = state.endDate.add(const Duration(days: 1));
+    final newEnd = newStart.add(Duration(days: days - 1));
+    await changeRange(newStart, newEnd);
+  }
+
+  /// 기도통장 계획 기간으로 범위 설정
+  Future<void> setToPlanRange(DateTime start, DateTime end) async {
+    await changeRange(_dateOnly(start), _dateOnly(end));
+  }
+
+  static DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+
+  /// 해당 날짜가 속한 주의 월요일
+  static DateTime _weekStart(DateTime dt) {
+    final d = _dateOnly(dt);
+    return d.subtract(Duration(days: d.weekday - 1));
+  }
+
+  /// 해당 날짜가 속한 주의 일요일
+  static DateTime _weekEnd(DateTime dt) {
+    final d = _dateOnly(dt);
+    return d.add(Duration(days: 7 - d.weekday));
+  }
 }
 
 /// 계획별로 독립된 ViewModel을 제공 (bankPlanId로 구분)
 final prayerListViewModelProvider = StateNotifierProvider.family<
     PrayerListViewModel, PrayerListState, int?>((ref, bankPlanId) {
   return PrayerListViewModel(
-    getByDateUseCase: sl<GetPrayerRecordsByDateUseCase>(),
+    getByRangeUseCase: sl<GetPrayerRecordsByDateRangeUseCase>(),
     deleteUseCase: sl<DeletePrayerRecordUseCase>(),
     getRecordDatesUseCase: sl<GetRecordDatesUseCase>(),
     bankPlanId: bankPlanId,

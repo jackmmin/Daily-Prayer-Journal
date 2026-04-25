@@ -313,7 +313,7 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
     if (_useTimer && state.isTimerStopped && state.elapsedDuration.inMinutes > 0) {
       duration = state.elapsedDuration;
     } else if (!_useTimer && _manualTimeEdited && _endTime != null) {
-      // 초를 버리고 분 단위로만 계산 (14:54xx ~ 14:58xx = 4분)
+      // prayerDuration getter와 동일하게 분 단위 계산
       final startMin = DateTime(_startTime.year, _startTime.month, _startTime.day, _startTime.hour, _startTime.minute);
       final endMin   = DateTime(_endTime!.year,  _endTime!.month,  _endTime!.day,  _endTime!.hour,  _endTime!.minute);
       final diff = endMin.difference(startMin);

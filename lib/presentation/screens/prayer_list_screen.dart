@@ -8,13 +8,13 @@ import '../../domain/entities/bank_plan.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_list_viewmodel.dart';
 import '../widgets/prayer_record_card.dart';
-import '../widgets/date_selector_bar.dart';
+import '../widgets/date_range_selector_bar.dart';
 import '../widgets/calendar_picker_dialog.dart';
 import '../widgets/prayer_bank_banner.dart';
 import 'prayer_form_screen.dart';
 
 class PrayerListScreen extends ConsumerStatefulWidget {
-  /// null이면 전체 기록, 지정하면 해당 계획 날짜로 초기 이동
+  /// null이면 전체 기록, 지정하면 해당 계획 기간으로 초기 범위 설정
   final BankPlan? initialPlan;
 
   const PrayerListScreen({super.key, this.initialPlan});
@@ -30,15 +30,13 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
   void initState() {
     super.initState();
     _bankPlanId = widget.initialPlan?.id;
-    // 계획이 지정된 경우 계획 시작일(또는 오늘)로 날짜 이동
+    // 계획이 지정된 경우 계획 전체 기간을 초기 범위로 설정
     if (widget.initialPlan != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final plan = widget.initialPlan!;
-        final today = DateTime.now();
-        final target = today.isAfter(plan.startDate) && !today.isAfter(plan.endDate)
-            ? today
-            : plan.startDate;
-        ref.read(prayerListViewModelProvider(_bankPlanId).notifier).changeDate(target);
+        ref
+            .read(prayerListViewModelProvider(_bankPlanId).notifier)
+            .setToPlanRange(plan.startDate, plan.endDate);
       });
     }
   }
@@ -49,16 +47,20 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     final vm = ref.read(prayerListViewModelProvider(_bankPlanId).notifier);
     final plansAsync = ref.watch(bankPlanProvider);
 
-    // 계획이 지정된 경우 해당 계획 기간만, 아니면 전체 계획 기간 기준으로 체크
+    // 현재 범위 내에 활성 계획이 있는지 확인
     final bool canAddRecord = plansAsync.maybeWhen(
       data: (plans) {
         if (widget.initialPlan != null) {
-          return _isDateInPlan(state.selectedDate, widget.initialPlan!);
+          return _rangeOverlapsPlan(state.startDate, state.endDate, widget.initialPlan!);
         }
-        return _isDateInAnyPlan(state.selectedDate, plans);
+        return plans.any((p) => _rangeOverlapsPlan(state.startDate, state.endDate, p));
       },
       orElse: () => false,
     );
+
+    // 다음 범위가 오늘 이후면 비활성화
+    final today = DateTime.now();
+    final disableNext = !state.endDate.isBefore(DateTime(today.year, today.month, today.day));
 
     return Scaffold(
       appBar: AppBar(
@@ -68,39 +70,39 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
         children: [
           if (widget.initialPlan != null) _PlanInfoHeader(plan: widget.initialPlan!),
           const PrayerBankBanner(),
-          DateSelectorBar(
-            selectedDate: state.selectedDate,
-            onDateChanged: vm.changeDate,
+          DateRangeSelectorBar(
+            startDate: state.startDate,
+            endDate: state.endDate,
+            onPrev: vm.movePrev,
+            onNext: vm.moveNext,
+            disableNext: disableNext,
           ),
           Expanded(
             child: _buildBody(context, state, vm, canAddRecord),
           ),
         ],
       ),
-      // 캘린더(좌) + 기도 기록(우) 버튼을 같은 라인에 배치
       bottomNavigationBar: _BottomActionBar(
-        selectedDate: state.selectedDate,
+        startDate: state.startDate,
+        endDate: state.endDate,
         recordDates: state.recordDates,
-        onDateChanged: vm.changeDate,
+        onRangeChanged: vm.changeRange,
         canAddRecord: canAddRecord,
         onAddRecord: () => _navigateToForm(context),
       ),
     );
   }
 
-  /// 선택된 날짜가 특정 계획 기간에 포함되는지 확인
-  bool _isDateInPlan(DateTime date, BankPlan plan) {
-    final d = DateTime(date.year, date.month, date.day);
-    final start = DateTime(plan.startDate.year, plan.startDate.month, plan.startDate.day);
-    final end = DateTime(plan.endDate.year, plan.endDate.month, plan.endDate.day);
-    return !d.isBefore(start) && !d.isAfter(end);
+  /// 범위가 계획 기간과 하루라도 겹치는지 확인
+  bool _rangeOverlapsPlan(DateTime start, DateTime end, BankPlan plan) {
+    final s = _dateOnly(start);
+    final e = _dateOnly(end);
+    final ps = _dateOnly(plan.startDate);
+    final pe = _dateOnly(plan.endDate);
+    return !e.isBefore(ps) && !s.isAfter(pe);
   }
 
-  /// 선택된 날짜가 하나 이상의 계획 기간에 포함되는지 확인
-  bool _isDateInAnyPlan(DateTime date, List<BankPlan> plans) {
-    if (plans.isEmpty) return false;
-    return plans.any((plan) => _isDateInPlan(date, plan));
-  }
+  static DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
   Widget _buildBody(
     BuildContext context,
@@ -132,26 +134,26 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              canAddRecord ? Icons.church_outlined : Icons.lock_outline,
+              Icons.church_outlined,
               size: 72,
               color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
-              canAddRecord ? '기도 기록이 없습니다' : '기도통장 계획이 없습니다',
+              '등록된 기도 일지가 없습니다',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Colors.grey,
                   ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              canAddRecord
-                  ? '+ 버튼을 눌러 기도를 기록해보세요'
-                  : '상단 배너에서 기도통장 계획을 먼저 세워주세요',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
-                  ),
-            ),
+            if (canAddRecord) ...[
+              const SizedBox(height: 8),
+              Text(
+                '+ 버튼을 눌러 기도를 기록해보세요',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey,
+                    ),
+              ),
+            ],
           ],
         ),
       );
@@ -190,7 +192,6 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       ),
     );
     ref.read(prayerListViewModelProvider(_bankPlanId).notifier).loadRecords();
-    // 기도 기록 변경 후 누적 금액 재계산
     ref.invalidate(planSavingsProvider);
   }
 
@@ -264,18 +265,18 @@ class _PlanInfoHeader extends StatelessWidget {
 
 /// 하단 액션 바: 좌측 캘린더 버튼 + 우측 기도 기록 버튼
 class _BottomActionBar extends StatelessWidget {
-  final DateTime selectedDate;
+  final DateTime startDate;
+  final DateTime endDate;
   final Set<DateTime> recordDates;
-  final ValueChanged<DateTime> onDateChanged;
+  final Future<void> Function(DateTime, DateTime) onRangeChanged;
   final VoidCallback onAddRecord;
-
-  /// 선택된 날짜에 활성 계획이 있을 때만 true
   final bool canAddRecord;
 
   const _BottomActionBar({
-    required this.selectedDate,
+    required this.startDate,
+    required this.endDate,
     required this.recordDates,
-    required this.onDateChanged,
+    required this.onRangeChanged,
     required this.canAddRecord,
     required this.onAddRecord,
   });
@@ -284,11 +285,14 @@ class _BottomActionBar extends StatelessWidget {
     final picked = await showDialog<DateTime>(
       context: context,
       builder: (_) => CalendarPickerDialog(
-        selectedDate: selectedDate,
+        selectedDate: startDate,
         recordDates: recordDates,
       ),
     );
-    if (picked != null) onDateChanged(picked);
+    if (picked != null) {
+      // 선택한 날짜 하루를 범위로 설정
+      await onRangeChanged(picked, picked);
+    }
   }
 
   @override
@@ -306,8 +310,10 @@ class _BottomActionBar extends StatelessWidget {
             ),
             FloatingActionButton.extended(
               heroTag: 'fab_add',
-              // 계획이 없으면 버튼 비활성화
+              // 기도통장 계획 기간 밖이면 버튼 비활성화
               onPressed: canAddRecord ? onAddRecord : null,
+              backgroundColor: canAddRecord ? null : Colors.grey.shade400,
+              foregroundColor: canAddRecord ? null : Colors.white,
               icon: const Icon(Icons.add),
               label: const Text('기도 기록'),
             ),

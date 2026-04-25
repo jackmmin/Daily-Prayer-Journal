@@ -10,6 +10,8 @@ abstract interface class PrayerLocalDataSource {
   Future<List<PrayerRecord>> getAllRecords();
   /// [bankPlanId]가 null이면 전체, 지정하면 해당 계획의 기록만 반환
   Future<List<PrayerRecord>> getRecordsByDate(DateTime date, {int? bankPlanId});
+  /// start~end 범위의 기록을 오래된 순으로 반환
+  Future<List<PrayerRecord>> getRecordsByDateRange(DateTime start, DateTime end, {int? bankPlanId});
   Future<PrayerRecord?> getRecordById(int id);
   Future<int> insertRecord(PrayerRecord record);
   Future<void> updateRecord(PrayerRecord record);
@@ -59,6 +61,37 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
       where: where.toString(),
       whereArgs: whereArgs,
       orderBy: '${PrayerRecordModel.columnCreatedAt} DESC',
+    );
+    return maps.map(PrayerRecordModel.fromMap).toList();
+  }
+
+  @override
+  Future<List<PrayerRecord>> getRecordsByDateRange(
+    DateTime start,
+    DateTime end, {
+    int? bankPlanId,
+  }) async {
+    final db = await _db;
+    final startMs = DateTime(start.year, start.month, start.day).millisecondsSinceEpoch;
+    final endMs = DateTime(end.year, end.month, end.day)
+        .add(const Duration(days: 1))
+        .millisecondsSinceEpoch;
+
+    final where = StringBuffer(
+      '${PrayerRecordModel.columnCreatedAt} >= ? AND ${PrayerRecordModel.columnCreatedAt} < ?',
+    );
+    final whereArgs = <dynamic>[startMs, endMs];
+
+    if (bankPlanId != null) {
+      where.write(' AND ${PrayerRecordModel.columnBankPlanId} = ?');
+      whereArgs.add(bankPlanId);
+    }
+
+    final maps = await db.query(
+      PrayerRecordModel.tableName,
+      where: where.toString(),
+      whereArgs: whereArgs,
+      orderBy: '${PrayerRecordModel.columnCreatedAt} ASC',
     );
     return maps.map(PrayerRecordModel.fromMap).toList();
   }
