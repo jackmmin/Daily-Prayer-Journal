@@ -65,8 +65,8 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
         _deleteUseCase = deleteUseCase,
         _getRecordDatesUseCase = getRecordDatesUseCase,
         super(PrayerListState(
-          startDate: initialStart ?? _weekStart(DateTime.now()),
-          endDate: initialEnd ?? _weekEnd(DateTime.now()),
+          startDate: initialStart ?? _dateOnly(DateTime.now()),
+          endDate: initialEnd ?? _dateOnly(DateTime.now()),
           bankPlanId: bankPlanId,
         )) {
     loadRecords();
@@ -130,17 +130,6 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
 
   static DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
-  /// 해당 날짜가 속한 주의 월요일
-  static DateTime _weekStart(DateTime dt) {
-    final d = _dateOnly(dt);
-    return d.subtract(Duration(days: d.weekday - 1));
-  }
-
-  /// 해당 날짜가 속한 주의 일요일
-  static DateTime _weekEnd(DateTime dt) {
-    final d = _dateOnly(dt);
-    return d.add(Duration(days: 7 - d.weekday));
-  }
 }
 
 /// 계획별로 독립된 ViewModel을 제공 (bankPlanId로 구분)
