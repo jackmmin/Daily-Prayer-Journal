@@ -3,12 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 
-import '../../../core/providers/bank_plan_provider.dart';
 import '../../../domain/entities/bank_plan.dart';
 import '../../screens/bank_plan_screen.dart';
 import '../../screens/prayer_list_screen.dart';
+import 'home_active_plan_card.dart';
 
 /// 기도통장 요약 카드 (진행 중인 계획 목록 또는 빈 상태 표시)
 class BankSummaryCard extends ConsumerWidget {
@@ -40,7 +39,7 @@ class BankSummaryCard extends ConsumerWidget {
               if (i > 0) const Gap(12),
               _buildShell(
                 context,
-                _SummaryActivePlan(plan: active[i]),
+                HomeActivePlanCard(plan: active[i]),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => PrayerListScreen(initialPlan: active[i]),
@@ -81,104 +80,6 @@ class BankSummaryCard extends ConsumerWidget {
   }
 }
 
-// ─── 진행 중인 계획 ────────────────────────────────────────────────────────────
-
-class _SummaryActivePlan extends ConsumerWidget {
-  final BankPlan plan;
-  const _SummaryActivePlan({required this.plan});
-
-  static final _dateFmt = DateFormat('M월 d일');
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final savingsAsync = ref.watch(planSavingsProvider(plan));
-
-    final today = DateTime.now();
-    final totalDays = plan.endDate.difference(plan.startDate).inDays + 1;
-    final passedDays = today.difference(plan.startDate).inDays + 1;
-    final progress = (passedDays / totalDays).clamp(0.0, 1.0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.savings_outlined, color: Colors.white, size: 22),
-            const Gap(8),
-            Text(
-              plan.title.isNotEmpty ? plan.title : '진행 중인 기도통장',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                '진행 중',
-                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        const Gap(12),
-        savingsAsync.when(
-          data: (amount) => Text(
-            '${_formatAmount(amount)}원',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          loading: () => const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-          ),
-          error: (_, __) => const Text('계산 오류', style: TextStyle(color: Colors.white70)),
-        ),
-        const Gap(4),
-        Text(
-          '${plan.minutes}분 기도 → ${_formatAmount(plan.amount)}원 적립',
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
-        ),
-        const Gap(16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${_dateFmt.format(plan.startDate)} ~ ${_dateFmt.format(plan.endDate)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
-                ),
-                Text(
-                  '$passedDays / $totalDays일',
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
-                ),
-              ],
-            ),
-            const Gap(6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 6,
-                backgroundColor: Colors.white.withValues(alpha: 0.25),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 // ─── 계획 없음 ────────────────────────────────────────────────────────────────
 
 class _SummaryNoPlan extends StatelessWidget {
@@ -199,11 +100,7 @@ class _SummaryNoPlan extends StatelessWidget {
               const Gap(4),
               Text(
                 allPlans.isEmpty ? '계획을 등록해보세요' : '진행 중인 계획이 없습니다',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Gap(4),
               const Text(
@@ -247,9 +144,3 @@ class _SummaryError extends StatelessWidget {
     );
   }
 }
-
-// ─── 공통 유틸 ────────────────────────────────────────────────────────────────
-
-String _formatAmount(int amount) => amount
-    .toString()
-    .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');

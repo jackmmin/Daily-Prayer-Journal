@@ -16,10 +16,36 @@ class BankPlanScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plansAsync = ref.watch(bankPlanProvider);
+    final notifier = ref.read(bankPlanProvider.notifier);
+    final sortOrder = notifier.sortOrder;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('기도통장 계획'),
+        actions: [
+          PopupMenuButton<BankPlanSortOrder>(
+            icon: const Icon(Icons.sort),
+            tooltip: '정렬',
+            initialValue: sortOrder,
+            onSelected: (order) => notifier.setSortOrder(order),
+            itemBuilder: (_) => BankPlanSortOrder.values.map((order) {
+              return PopupMenuItem(
+                value: order,
+                child: Row(
+                  children: [
+                    Icon(
+                      sortOrder == order ? Icons.check : null,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(order.label),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
       body: plansAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

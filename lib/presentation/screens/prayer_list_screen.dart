@@ -58,7 +58,33 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('기도 일지')),
+      appBar: AppBar(
+        title: const Text('기도 일지'),
+        actions: [
+          PopupMenuButton<PrayerSortOrder>(
+            icon: const Icon(Icons.sort),
+            tooltip: '정렬',
+            initialValue: state.sortOrder,
+            onSelected: vm.setSortOrder,
+            itemBuilder: (_) => PrayerSortOrder.values.map((order) {
+              return PopupMenuItem(
+                value: order,
+                child: Row(
+                  children: [
+                    Icon(
+                      state.sortOrder == order ? Icons.check : null,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(order.label),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           if (widget.initialPlan != null) PlanInfoHeader(plan: widget.initialPlan!),

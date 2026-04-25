@@ -10,16 +10,48 @@ import '../../domain/entities/prayer_record.dart';
 import '../../domain/usecases/prayer_usecases.dart';
 import '../di/injection_container.dart';
 
+// ─── 정렬 기준 ────────────────────────────────────────────────────────────────
+
+enum BankPlanSortOrder {
+  startDateDesc, // 시작일 최신순 (기본값)
+  startDateAsc,  // 시작일 오래된순
+  titleAsc,      // 이름 오름차순
+  amountDesc,    // 금액 높은순
+  amountAsc,     // 금액 낮은순
+}
+
+extension BankPlanSortOrderExt on BankPlanSortOrder {
+  String get label {
+    switch (this) {
+      case BankPlanSortOrder.startDateDesc: return '시작일 최신순';
+      case BankPlanSortOrder.startDateAsc:  return '시작일 오래된순';
+      case BankPlanSortOrder.titleAsc:      return '이름순';
+      case BankPlanSortOrder.amountDesc:    return '금액 높은순';
+      case BankPlanSortOrder.amountAsc:     return '금액 낮은순';
+    }
+  }
+
+  String get orderBy {
+    switch (this) {
+      case BankPlanSortOrder.startDateDesc: return '${BankPlanModel.columnStartDate} DESC';
+      case BankPlanSortOrder.startDateAsc:  return '${BankPlanModel.columnStartDate} ASC';
+      case BankPlanSortOrder.titleAsc:      return '${BankPlanModel.columnTitle} ASC';
+      case BankPlanSortOrder.amountDesc:    return '${BankPlanModel.columnAmount} DESC';
+      case BankPlanSortOrder.amountAsc:     return '${BankPlanModel.columnAmount} ASC';
+    }
+  }
+}
+
 // ─── Repository ─────────────────────────────────────────────────────────────
 
 class BankPlanRepository {
   Future<Database> get _db => DatabaseHelper.instance.database;
 
-  Future<List<BankPlan>> getAll() async {
+  Future<List<BankPlan>> getAll({BankPlanSortOrder sortOrder = BankPlanSortOrder.startDateDesc}) async {
     final db = await _db;
     final rows = await db.query(
       BankPlanModel.tableName,
-      orderBy: '${BankPlanModel.columnStartDate} DESC',
+      orderBy: sortOrder.orderBy,
     );
     return rows.map(BankPlanModel.fromMap).toList();
   }
@@ -53,19 +85,27 @@ class BankPlanRepository {
 
 class BankPlanNotifier extends StateNotifier<AsyncValue<List<BankPlan>>> {
   final BankPlanRepository _repo;
+  BankPlanSortOrder _sortOrder = BankPlanSortOrder.startDateDesc;
 
   BankPlanNotifier(this._repo) : super(const AsyncValue.loading()) {
     load();
   }
 
+  BankPlanSortOrder get sortOrder => _sortOrder;
+
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final plans = await _repo.getAll();
+      final plans = await _repo.getAll(sortOrder: _sortOrder);
       state = AsyncValue.data(plans);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
+  }
+
+  Future<void> setSortOrder(BankPlanSortOrder order) async {
+    _sortOrder = order;
+    await load();
   }
 
   Future<void> add(BankPlan plan) async {

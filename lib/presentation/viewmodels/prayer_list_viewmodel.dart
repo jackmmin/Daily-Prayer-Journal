@@ -6,6 +6,51 @@ import '../../core/di/injection_container.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../../domain/usecases/prayer_usecases.dart';
 
+// ─── 정렬 기준 ────────────────────────────────────────────────────────────────
+
+enum PrayerSortOrder {
+  timeDesc,     // 시작 시간 최신순 (기본값)
+  timeAsc,      // 시작 시간 오래된순
+  durationDesc, // 기도 시간 긴순
+  durationAsc,  // 기도 시간 짧은순
+}
+
+extension PrayerSortOrderExt on PrayerSortOrder {
+  String get label {
+    switch (this) {
+      case PrayerSortOrder.timeDesc:     return '최신순';
+      case PrayerSortOrder.timeAsc:      return '오래된순';
+      case PrayerSortOrder.durationDesc: return '기도시간 긴순';
+      case PrayerSortOrder.durationAsc:  return '기도시간 짧은순';
+    }
+  }
+
+  List<PrayerRecord> sort(List<PrayerRecord> records) {
+    final list = List<PrayerRecord>.from(records);
+    switch (this) {
+      case PrayerSortOrder.timeDesc:
+        list.sort((a, b) => b.startTime.compareTo(a.startTime));
+      case PrayerSortOrder.timeAsc:
+        list.sort((a, b) => a.startTime.compareTo(b.startTime));
+      case PrayerSortOrder.durationDesc:
+        list.sort((a, b) {
+          final da = a.prayerDuration?.inSeconds ?? 0;
+          final db = b.prayerDuration?.inSeconds ?? 0;
+          return db.compareTo(da);
+        });
+      case PrayerSortOrder.durationAsc:
+        list.sort((a, b) {
+          final da = a.prayerDuration?.inSeconds ?? 0;
+          final db = b.prayerDuration?.inSeconds ?? 0;
+          return da.compareTo(db);
+        });
+    }
+    return list;
+  }
+}
+
+// ─── 상태 ─────────────────────────────────────────────────────────────────────
+
 class PrayerListState {
   final List<PrayerRecord> records;
   final bool isLoading;
@@ -16,6 +61,8 @@ class PrayerListState {
   final Set<DateTime> recordDates;
   /// 필터링할 기도통장 계획 ID (null이면 전체)
   final int? bankPlanId;
+  /// 현재 정렬 기준
+  final PrayerSortOrder sortOrder;
 
   const PrayerListState({
     this.records = const [],
@@ -25,6 +72,7 @@ class PrayerListState {
     required this.endDate,
     this.recordDates = const {},
     this.bankPlanId,
+    this.sortOrder = PrayerSortOrder.timeDesc,
   });
 
   PrayerListState copyWith({
@@ -36,6 +84,7 @@ class PrayerListState {
     Set<DateTime>? recordDates,
     bool clearError = false,
     int? bankPlanId,
+    PrayerSortOrder? sortOrder,
   }) {
     return PrayerListState(
       records: records ?? this.records,
@@ -45,6 +94,7 @@ class PrayerListState {
       endDate: endDate ?? this.endDate,
       recordDates: recordDates ?? this.recordDates,
       bankPlanId: bankPlanId ?? this.bankPlanId,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 }
@@ -80,8 +130,9 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
         _getByRangeUseCase.execute(state.startDate, state.endDate, bankPlanId: planId),
         _getRecordDatesUseCase.execute(bankPlanId: planId),
       ]);
+      final sorted = state.sortOrder.sort(results[0] as List<PrayerRecord>);
       state = state.copyWith(
-        records: results[0] as List<PrayerRecord>,
+        records: sorted,
         recordDates: results[1] as Set<DateTime>,
         isLoading: false,
       );
@@ -91,6 +142,14 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
         errorMessage: '기도 기록을 불러오는데 실패했습니다.',
       );
     }
+  }
+
+  Future<void> setSortOrder(PrayerSortOrder order) async {
+    // 정렬 기준 변경: DB 재조회 없이 현재 목록만 재정렬
+    state = state.copyWith(
+      sortOrder: order,
+      records: order.sort(state.records),
+    );
   }
 
   Future<void> changeRange(DateTime start, DateTime end) async {
