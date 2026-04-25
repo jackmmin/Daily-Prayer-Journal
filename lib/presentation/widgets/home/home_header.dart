@@ -11,13 +11,14 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Icon(Icons.wb_sunny_outlined, color: color, size: 22),
-            const Gap(8),
+            const Gap(6),
             Text(
               today,
               style: TextStyle(

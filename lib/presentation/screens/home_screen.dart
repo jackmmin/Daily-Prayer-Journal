@@ -21,7 +21,9 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plansAsync = ref.watch(bankPlanProvider);
-    final today = DateFormat('yyyy년 M월 d일 (E)', 'ko').format(DateTime.now());
+    // UTC 기준 기기에서도 KST(UTC+9)로 오늘 날짜를 강제 표시
+    final nowKst = DateTime.now().toUtc().add(const Duration(hours: 9));
+    final today = DateFormat('yyyy년 M월 d일 (E)', 'ko').format(nowKst);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
