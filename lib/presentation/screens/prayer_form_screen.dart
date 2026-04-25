@@ -43,6 +43,9 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
       if (record.endTime != null) _manualTimeEdited = true;
     } else {
       _startTime = DateTime.now();
+      // 직접입력 필수값이므로 기본 종료시간은 시작시간+1분
+      _endTime = _startTime.add(const Duration(minutes: 1));
+      _manualTimeEdited = true;
     }
   }
 
@@ -259,22 +262,33 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
                   time: _startTime,
                   onChanged: (t) => setState(() {
                     _startTime = t;
+                    // 종료 시간이 시작 시간보다 앞서면 시작+1분으로 자동 보정
+                    if (_endTime != null && !_endTime!.isAfter(t)) {
+                      _endTime = t.add(const Duration(minutes: 1));
+                    }
                     _manualTimeEdited = true;
                   }),
                 ),
                 const Gap(12),
                 TimePickerField(
-                  label: '종료 시간 (선택)',
+                  label: '종료 시간',
                   time: _endTime,
-                  onChanged: (t) => setState(() {
-                    _endTime = t;
-                    _manualTimeEdited = true;
-                  }),
-                  onCleared: () => setState(() {
-                    _endTime = null;
-                    _manualTimeEdited = true;
-                  }),
-                  nullable: true,
+                  onChanged: (t) {
+                    if (!t.isAfter(_startTime)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('종료 시간은 시작 시간보다 늦어야 합니다'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() {
+                      _endTime = t;
+                      _manualTimeEdited = true;
+                    });
+                  },
                 ),
               ] else ...[
                 TimerWidget(
