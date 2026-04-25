@@ -14,8 +14,10 @@ class PrayerFormScreen extends ConsumerStatefulWidget {
   final PrayerRecord? editingRecord;
   // 기도통장 계획에서 진입한 경우 해당 계획
   final BankPlan? bankPlan;
+  // 일지 목록에서 선택된 날짜 (새 기록 작성 시 기본 시작시간의 날짜로 사용)
+  final DateTime? initialDate;
 
-  const PrayerFormScreen({super.key, this.editingRecord, this.bankPlan});
+  const PrayerFormScreen({super.key, this.editingRecord, this.bankPlan, this.initialDate});
 
   @override
   ConsumerState<PrayerFormScreen> createState() => _PrayerFormScreenState();
@@ -42,7 +44,12 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
       _endTime = record.endTime;
       if (record.endTime != null) _manualTimeEdited = true;
     } else {
-      _startTime = DateTime.now();
+      final now = DateTime.now();
+      final base = widget.initialDate;
+      // 선택된 날짜가 있으면 해당 날짜 + 현재 시각, 없으면 현재 시각
+      _startTime = base != null
+          ? DateTime(base.year, base.month, base.day, now.hour, now.minute)
+          : now;
       // 직접입력 필수값이므로 기본 종료시간은 시작시간+1분
       _endTime = _startTime.add(const Duration(minutes: 1));
       _manualTimeEdited = true;

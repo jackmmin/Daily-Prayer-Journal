@@ -183,11 +183,16 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     BuildContext context, {
     PrayerRecord? record,
   }) async {
+    // 새 기록 작성 시 현재 선택된 날짜를 기본 시작시간 날짜로 전달
+    final selectedDate = record == null
+        ? ref.read(prayerListViewModelProvider(_bankPlanId)).startDate
+        : null;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PrayerFormScreen(
           editingRecord: record,
           bankPlan: widget.initialPlan,
+          initialDate: selectedDate,
         ),
       ),
     );
