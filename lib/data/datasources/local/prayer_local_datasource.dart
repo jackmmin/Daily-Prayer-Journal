@@ -44,7 +44,8 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     final where = StringBuffer(
-      '${PrayerRecordModel.columnCreatedAt} >= ? AND ${PrayerRecordModel.columnCreatedAt} < ?',
+      // 날짜 분류 기준: createdAt(생성 시각)이 아닌 startTime(기도 시작 시각) 기준
+      '${PrayerRecordModel.columnStartTime} >= ? AND ${PrayerRecordModel.columnStartTime} < ?',
     );
     final whereArgs = <dynamic>[
       startOfDay.millisecondsSinceEpoch,
@@ -60,7 +61,7 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
       PrayerRecordModel.tableName,
       where: where.toString(),
       whereArgs: whereArgs,
-      orderBy: '${PrayerRecordModel.columnCreatedAt} DESC',
+      orderBy: '${PrayerRecordModel.columnStartTime} DESC',
     );
     return maps.map(PrayerRecordModel.fromMap).toList();
   }
@@ -78,7 +79,8 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
         .millisecondsSinceEpoch;
 
     final where = StringBuffer(
-      '${PrayerRecordModel.columnCreatedAt} >= ? AND ${PrayerRecordModel.columnCreatedAt} < ?',
+      // 날짜 분류 기준: createdAt(생성 시각)이 아닌 startTime(기도 시작 시각) 기준
+      '${PrayerRecordModel.columnStartTime} >= ? AND ${PrayerRecordModel.columnStartTime} < ?',
     );
     final whereArgs = <dynamic>[startMs, endMs];
 
@@ -91,7 +93,7 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
       PrayerRecordModel.tableName,
       where: where.toString(),
       whereArgs: whereArgs,
-      orderBy: '${PrayerRecordModel.columnCreatedAt} ASC',
+      orderBy: '${PrayerRecordModel.columnStartTime} ASC',
     );
     return maps.map(PrayerRecordModel.fromMap).toList();
   }
@@ -150,7 +152,8 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
       whereArgs: bankPlanId != null ? [bankPlanId] : null,
     );
     return maps.map((row) {
-      final ms = row[PrayerRecordModel.columnCreatedAt] as int;
+      // 날짜 분류 기준: createdAt(생성 시각)이 아닌 startTime(기도 시작 시각) 기준
+      final ms = row[PrayerRecordModel.columnStartTime] as int;
       final dt = DateTime.fromMillisecondsSinceEpoch(ms);
       return DateTime(dt.year, dt.month, dt.day);
     }).toSet();
