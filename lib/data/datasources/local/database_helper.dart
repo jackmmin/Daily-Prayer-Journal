@@ -8,7 +8,7 @@ import '../../models/prayer_record_model.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'prayer_journal.db';
-  static const int _databaseVersion = 2;
+  static const int _databaseVersion = 4;
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -41,6 +41,18 @@ class DatabaseHelper {
     // v1 → v2: bank_plans 테이블 추가
     if (oldVersion < 2) {
       await db.execute(BankPlanModel.createTableSql);
+    }
+    // v2 → v3: bank_plans.title 컬럼 추가
+    if (oldVersion < 3) {
+      await db.execute(
+        "ALTER TABLE ${BankPlanModel.tableName} ADD COLUMN ${BankPlanModel.columnTitle} TEXT NOT NULL DEFAULT ''",
+      );
+    }
+    // v3 → v4: prayer_records.bank_plan_id 컬럼 추가 (계획별 일지 분리)
+    if (oldVersion < 4) {
+      await db.execute(
+        "ALTER TABLE ${PrayerRecordModel.tableName} ADD COLUMN ${PrayerRecordModel.columnBankPlanId} INTEGER",
+      );
     }
   }
 

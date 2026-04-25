@@ -8,6 +8,9 @@ class PrayerRecord {
   final DateTime? endTime;
   final DateTime createdAt;
 
+  /// 연결된 기도통장 계획 ID (null이면 미연결)
+  final int? bankPlanId;
+
   const PrayerRecord({
     this.id,
     required this.title,
@@ -15,6 +18,7 @@ class PrayerRecord {
     required this.startTime,
     this.endTime,
     required this.createdAt,
+    this.bankPlanId,
   });
 
   Duration? get prayerDuration {
@@ -32,6 +36,8 @@ class PrayerRecord {
     DateTime? endTime,
     DateTime? createdAt,
     bool clearEndTime = false,
+    int? bankPlanId,
+    bool clearBankPlanId = false,
   }) {
     return PrayerRecord(
       id: id ?? this.id,
@@ -40,6 +46,7 @@ class PrayerRecord {
       startTime: startTime ?? this.startTime,
       endTime: clearEndTime ? null : (endTime ?? this.endTime),
       createdAt: createdAt ?? this.createdAt,
+      bankPlanId: clearBankPlanId ? null : (bankPlanId ?? this.bankPlanId),
     );
   }
 

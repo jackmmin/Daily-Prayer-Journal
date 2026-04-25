@@ -58,9 +58,23 @@ class BankPlanCard extends ConsumerWidget {
                       ),
                     ),
                   Expanded(
-                    child: Text(
-                      '${_dateFmt.format(plan.startDate)} ~ ${_dateFmt.format(plan.endDate)}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (plan.title.isNotEmpty)
+                          Text(
+                            plan.title,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        Text(
+                          '${_dateFmt.format(plan.startDate)} ~ ${_dateFmt.format(plan.endDate)}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: plan.title.isNotEmpty ? Colors.grey.shade600 : null,
+                                fontSize: plan.title.isNotEmpty ? 12 : null,
+                              ),
+                        ),
+                      ],
                     ),
                   ),
                   PopupMenuButton<String>(

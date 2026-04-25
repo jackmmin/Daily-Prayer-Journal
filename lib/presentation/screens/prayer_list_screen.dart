@@ -24,9 +24,12 @@ class PrayerListScreen extends ConsumerStatefulWidget {
 }
 
 class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
+  late final int? _bankPlanId;
+
   @override
   void initState() {
     super.initState();
+    _bankPlanId = widget.initialPlan?.id;
     // 계획이 지정된 경우 계획 시작일(또는 오늘)로 날짜 이동
     if (widget.initialPlan != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -35,20 +38,25 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
         final target = today.isAfter(plan.startDate) && !today.isAfter(plan.endDate)
             ? today
             : plan.startDate;
-        ref.read(prayerListViewModelProvider.notifier).changeDate(target);
+        ref.read(prayerListViewModelProvider(_bankPlanId).notifier).changeDate(target);
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(prayerListViewModelProvider);
-    final vm = ref.read(prayerListViewModelProvider.notifier);
+    final state = ref.watch(prayerListViewModelProvider(_bankPlanId));
+    final vm = ref.read(prayerListViewModelProvider(_bankPlanId).notifier);
     final plansAsync = ref.watch(bankPlanProvider);
 
-    // 선택된 날짜가 활성 계획 기간 내에 있는지 확인
+    // 계획이 지정된 경우 해당 계획 기간만, 아니면 전체 계획 기간 기준으로 체크
     final bool canAddRecord = plansAsync.maybeWhen(
-      data: (plans) => _isDateInAnyPlan(state.selectedDate, plans),
+      data: (plans) {
+        if (widget.initialPlan != null) {
+          return _isDateInPlan(state.selectedDate, widget.initialPlan!);
+        }
+        return _isDateInAnyPlan(state.selectedDate, plans);
+      },
       orElse: () => false,
     );
 
@@ -90,15 +98,18 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     return '${fmt(plan.startDate)} ~ ${fmt(plan.endDate)}';
   }
 
+  /// 선택된 날짜가 특정 계획 기간에 포함되는지 확인
+  bool _isDateInPlan(DateTime date, BankPlan plan) {
+    final d = DateTime(date.year, date.month, date.day);
+    final start = DateTime(plan.startDate.year, plan.startDate.month, plan.startDate.day);
+    final end = DateTime(plan.endDate.year, plan.endDate.month, plan.endDate.day);
+    return !d.isBefore(start) && !d.isAfter(end);
+  }
+
   /// 선택된 날짜가 하나 이상의 계획 기간에 포함되는지 확인
   bool _isDateInAnyPlan(DateTime date, List<BankPlan> plans) {
     if (plans.isEmpty) return false;
-    final d = DateTime(date.year, date.month, date.day);
-    return plans.any((plan) {
-      final start = DateTime(plan.startDate.year, plan.startDate.month, plan.startDate.day);
-      final end = DateTime(plan.endDate.year, plan.endDate.month, plan.endDate.day);
-      return !d.isBefore(start) && !d.isAfter(end);
-    });
+    return plans.any((plan) => _isDateInPlan(date, plan));
   }
 
   Widget _buildBody(
@@ -182,10 +193,13 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
   }) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => PrayerFormScreen(editingRecord: record),
+        builder: (_) => PrayerFormScreen(
+          editingRecord: record,
+          bankPlan: widget.initialPlan,
+        ),
       ),
     );
-    ref.read(prayerListViewModelProvider.notifier).loadRecords();
+    ref.read(prayerListViewModelProvider(_bankPlanId).notifier).loadRecords();
     // 기도 기록 변경 후 누적 금액 재계산
     ref.invalidate(planSavingsProvider);
   }

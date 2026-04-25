@@ -8,12 +8,14 @@ import 'database_helper.dart';
 
 abstract interface class PrayerLocalDataSource {
   Future<List<PrayerRecord>> getAllRecords();
-  Future<List<PrayerRecord>> getRecordsByDate(DateTime date);
+  /// [bankPlanId]가 null이면 전체, 지정하면 해당 계획의 기록만 반환
+  Future<List<PrayerRecord>> getRecordsByDate(DateTime date, {int? bankPlanId});
   Future<PrayerRecord?> getRecordById(int id);
   Future<int> insertRecord(PrayerRecord record);
   Future<void> updateRecord(PrayerRecord record);
   Future<void> deleteRecord(int id);
-  Future<Set<DateTime>> getRecordDates();
+  /// [bankPlanId]가 null이면 전체, 지정하면 해당 계획의 기록 날짜만 반환
+  Future<Set<DateTime>> getRecordDates({int? bankPlanId});
 }
 
 class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
@@ -34,19 +36,28 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
   }
 
   @override
-  Future<List<PrayerRecord>> getRecordsByDate(DateTime date) async {
+  Future<List<PrayerRecord>> getRecordsByDate(DateTime date, {int? bankPlanId}) async {
     final db = await _db;
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
+    final where = StringBuffer(
+      '${PrayerRecordModel.columnCreatedAt} >= ? AND ${PrayerRecordModel.columnCreatedAt} < ?',
+    );
+    final whereArgs = <dynamic>[
+      startOfDay.millisecondsSinceEpoch,
+      endOfDay.millisecondsSinceEpoch,
+    ];
+
+    if (bankPlanId != null) {
+      where.write(' AND ${PrayerRecordModel.columnBankPlanId} = ?');
+      whereArgs.add(bankPlanId);
+    }
+
     final maps = await db.query(
       PrayerRecordModel.tableName,
-      where:
-          '${PrayerRecordModel.columnCreatedAt} >= ? AND ${PrayerRecordModel.columnCreatedAt} < ?',
-      whereArgs: [
-        startOfDay.millisecondsSinceEpoch,
-        endOfDay.millisecondsSinceEpoch,
-      ],
+      where: where.toString(),
+      whereArgs: whereArgs,
       orderBy: '${PrayerRecordModel.columnCreatedAt} DESC',
     );
     return maps.map(PrayerRecordModel.fromMap).toList();
@@ -97,12 +108,13 @@ class PrayerLocalDataSourceImpl implements PrayerLocalDataSource {
   }
 
   @override
-  Future<Set<DateTime>> getRecordDates() async {
+  Future<Set<DateTime>> getRecordDates({int? bankPlanId}) async {
     final db = await _db;
-    // createdAt 컬럼만 조회해 날짜(년/월/일)만 추출
     final maps = await db.query(
       PrayerRecordModel.tableName,
       columns: [PrayerRecordModel.columnCreatedAt],
+      where: bankPlanId != null ? '${PrayerRecordModel.columnBankPlanId} = ?' : null,
+      whereArgs: bankPlanId != null ? [bankPlanId] : null,
     );
     return maps.map((row) {
       final ms = row[PrayerRecordModel.columnCreatedAt] as int;

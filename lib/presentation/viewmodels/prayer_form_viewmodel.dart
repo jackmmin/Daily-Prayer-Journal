@@ -126,6 +126,7 @@ class PrayerFormViewModel extends StateNotifier<PrayerFormState> {
     required String content,
     required DateTime startTime,
     DateTime? endTime,
+    int? bankPlanId,
   }) async {
     if (title.trim().isEmpty) {
       state = state.copyWith(errorMessage: '기도 제목을 입력해주세요.');
@@ -141,6 +142,9 @@ class PrayerFormViewModel extends StateNotifier<PrayerFormState> {
             : endTime)
         : endTime;
 
+    // 수정 시 기존 bankPlanId 유지, 신규 시 파라미터 값 사용
+    final effectiveBankPlanId = state.editingRecord?.bankPlanId ?? bankPlanId;
+
     final record = PrayerRecord(
       id: state.editingRecord?.id,
       title: title.trim(),
@@ -148,6 +152,7 @@ class PrayerFormViewModel extends StateNotifier<PrayerFormState> {
       startTime: effectiveStartTime,
       endTime: effectiveEndTime,
       createdAt: state.editingRecord?.createdAt ?? DateTime.now(),
+      bankPlanId: effectiveBankPlanId,
     );
 
     state = state.copyWith(isSaving: true, clearError: true);

@@ -22,6 +22,7 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
 
   late DateTime _startDate;
   late DateTime _endDate;
+  late TextEditingController _titleCtrl;
   late TextEditingController _minutesCtrl;
   late TextEditingController _amountCtrl;
 
@@ -32,12 +33,14 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
     final today = DateTime.now();
     _startDate = p?.startDate ?? DateTime(today.year, today.month, today.day);
     _endDate = p?.endDate ?? DateTime(today.year, today.month + 1, today.day);
+    _titleCtrl = TextEditingController(text: p?.title ?? '');
     _minutesCtrl = TextEditingController(text: (p?.minutes ?? 1).toString());
     _amountCtrl = TextEditingController(text: (p?.amount ?? 100).toString());
   }
 
   @override
   void dispose() {
+    _titleCtrl.dispose();
     _minutesCtrl.dispose();
     _amountCtrl.dispose();
     super.dispose();
@@ -79,6 +82,7 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
 
     final plan = BankPlan(
       id: widget.plan?.id,
+      title: _titleCtrl.text.trim(),
       startDate: _startDate,
       endDate: _endDate,
       minutes: minutes,
@@ -128,6 +132,18 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
             ],
           ),
           const Gap(24),
+          TextField(
+            controller: _titleCtrl,
+            maxLength: 30,
+            decoration: const InputDecoration(
+              labelText: '계획 이름 (선택)',
+              hintText: '예) 새벽기도 100일',
+              isDense: true,
+              border: OutlineInputBorder(),
+              counterText: '',
+            ),
+          ),
+          const Gap(16),
           Row(
             children: [
               Expanded(child: _dateTile(label: '시작일', date: _startDate, onTap: () => _pickDate(isStart: true))),

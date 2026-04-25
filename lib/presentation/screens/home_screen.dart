@@ -121,28 +121,49 @@ class _BankSummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final color = Theme.of(context).colorScheme.primary;
+    return plansAsync.when(
+      loading: () => _buildShell(context, const _SummaryLoading(), onTap: null),
+      error: (_, __) => _buildShell(context, const _SummaryError(), onTap: null),
+      data: (plans) {
+        // 시작일 오름차순으로 진행 중인 계획 모두 표시
+        final active = plans.where((p) => p.isActive).toList()
+          ..sort((a, b) => a.startDate.compareTo(b.startDate));
 
-    // 진행 중인 계획이 있으면 해당 계획의 기도일지 목록으로, 없으면 계획 관리 화면으로 이동
-    final activePlan = plansAsync.maybeWhen(
-      data: (plans) => plans.where((p) => p.isActive).firstOrNull,
-      orElse: () => null,
-    );
-
-    return GestureDetector(
-      onTap: () {
-        if (activePlan != null) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => PrayerListScreen(initialPlan: activePlan),
+        if (active.isEmpty) {
+          return _buildShell(
+            context,
+            _SummaryNoPlan(allPlans: plans),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BankPlanScreen()),
             ),
           );
-        } else {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const BankPlanScreen()),
-          );
         }
+
+        // 계획이 여러 개면 세로로 나열
+        return Column(
+          children: [
+            for (int i = 0; i < active.length; i++) ...[
+              if (i > 0) const Gap(12),
+              _buildShell(
+                context,
+                _SummaryActivePlan(plan: active[i]),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PrayerListScreen(initialPlan: active[i]),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
       },
+    );
+  }
+
+  Widget _buildShell(BuildContext context, Widget child, {VoidCallback? onTap}) {
+    final color = Theme.of(context).colorScheme.primary;
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -160,17 +181,7 @@ class _BankSummaryCard extends ConsumerWidget {
             ),
           ],
         ),
-        child: plansAsync.when(
-          loading: () => const _SummaryLoading(),
-          error: (_, __) => const _SummaryError(),
-          data: (plans) {
-            final active = plans.where((p) => p.isActive).toList();
-            if (active.isEmpty) {
-              return _SummaryNoPlan(allPlans: plans);
-            }
-            return _SummaryActivePlan(plan: active.first);
-          },
-        ),
+        child: child,
       ),
     );
   }
@@ -202,9 +213,9 @@ class _SummaryActivePlan extends ConsumerWidget {
           children: [
             const Icon(Icons.savings_outlined, color: Colors.white, size: 22),
             const Gap(8),
-            const Text(
-              '진행 중인 기도통장',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+            Text(
+              plan.title.isNotEmpty ? plan.title : '진행 중인 기도통장',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
             const Spacer(),
             Container(

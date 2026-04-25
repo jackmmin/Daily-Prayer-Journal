@@ -380,6 +380,7 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
       content: _contentController.text,
       startTime: _startTime,
       endTime: _endTime,
+      bankPlanId: widget.bankPlan?.id,
     );
   }
 }

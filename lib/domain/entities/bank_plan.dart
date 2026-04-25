@@ -3,6 +3,9 @@
 class BankPlan {
   final int? id;
 
+  /// 계획 이름 (선택)
+  final String title;
+
   /// 계획 시작일 (시분초 무시, 날짜만 사용)
   final DateTime startDate;
 
@@ -17,6 +20,7 @@ class BankPlan {
 
   const BankPlan({
     this.id,
+    this.title = '',
     required this.startDate,
     required this.endDate,
     required this.minutes,
@@ -38,6 +42,7 @@ class BankPlan {
 
   BankPlan copyWith({
     int? id,
+    String? title,
     DateTime? startDate,
     DateTime? endDate,
     int? minutes,
@@ -45,6 +50,7 @@ class BankPlan {
   }) =>
       BankPlan(
         id: id ?? this.id,
+        title: title ?? this.title,
         startDate: startDate ?? this.startDate,
         endDate: endDate ?? this.endDate,
         minutes: minutes ?? this.minutes,

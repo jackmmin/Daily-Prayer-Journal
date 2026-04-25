@@ -13,6 +13,8 @@ class PrayerListState {
   final DateTime selectedDate;
   /// 기도 기록이 존재하는 날짜 집합 (년/월/일 정규화)
   final Set<DateTime> recordDates;
+  /// 필터링할 기도통장 계획 ID (null이면 전체)
+  final int? bankPlanId;
 
   const PrayerListState({
     this.records = const [],
@@ -20,6 +22,7 @@ class PrayerListState {
     this.errorMessage,
     required this.selectedDate,
     this.recordDates = const {},
+    this.bankPlanId,
   });
 
   PrayerListState copyWith({
@@ -29,6 +32,7 @@ class PrayerListState {
     DateTime? selectedDate,
     Set<DateTime>? recordDates,
     bool clearError = false,
+    int? bankPlanId,
   }) {
     return PrayerListState(
       records: records ?? this.records,
@@ -36,6 +40,7 @@ class PrayerListState {
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       selectedDate: selectedDate ?? this.selectedDate,
       recordDates: recordDates ?? this.recordDates,
+      bankPlanId: bankPlanId ?? this.bankPlanId,
     );
   }
 }
@@ -49,20 +54,25 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
     required GetPrayerRecordsByDateUseCase getByDateUseCase,
     required DeletePrayerRecordUseCase deleteUseCase,
     required GetRecordDatesUseCase getRecordDatesUseCase,
+    int? bankPlanId,
+    DateTime? initialDate,
   })  : _getByDateUseCase = getByDateUseCase,
         _deleteUseCase = deleteUseCase,
         _getRecordDatesUseCase = getRecordDatesUseCase,
-        super(PrayerListState(selectedDate: DateTime.now())) {
+        super(PrayerListState(
+          selectedDate: initialDate ?? DateTime.now(),
+          bankPlanId: bankPlanId,
+        )) {
     loadRecords();
   }
 
   Future<void> loadRecords() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      // 선택된 날짜의 기록과 전체 기록 날짜를 동시에 로드
+      final planId = state.bankPlanId;
       final results = await Future.wait([
-        _getByDateUseCase.execute(state.selectedDate),
-        _getRecordDatesUseCase.execute(),
+        _getByDateUseCase.execute(state.selectedDate, bankPlanId: planId),
+        _getRecordDatesUseCase.execute(bankPlanId: planId),
       ]);
       state = state.copyWith(
         records: results[0] as List<PrayerRecord>,
@@ -92,11 +102,13 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
   }
 }
 
-final prayerListViewModelProvider =
-    StateNotifierProvider<PrayerListViewModel, PrayerListState>((ref) {
+/// 계획별로 독립된 ViewModel을 제공 (bankPlanId로 구분)
+final prayerListViewModelProvider = StateNotifierProvider.family<
+    PrayerListViewModel, PrayerListState, int?>((ref, bankPlanId) {
   return PrayerListViewModel(
     getByDateUseCase: sl<GetPrayerRecordsByDateUseCase>(),
     deleteUseCase: sl<DeletePrayerRecordUseCase>(),
     getRecordDatesUseCase: sl<GetRecordDatesUseCase>(),
+    bankPlanId: bankPlanId,
   );
 });

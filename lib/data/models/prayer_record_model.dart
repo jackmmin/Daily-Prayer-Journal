@@ -11,6 +11,7 @@ class PrayerRecordModel {
   static const String columnStartTime = 'start_time';
   static const String columnEndTime = 'end_time';
   static const String columnCreatedAt = 'created_at';
+  static const String columnBankPlanId = 'bank_plan_id';
 
   static const String createTableSql = '''
     CREATE TABLE $tableName (
@@ -19,7 +20,8 @@ class PrayerRecordModel {
       $columnContent TEXT NOT NULL,
       $columnStartTime INTEGER NOT NULL,
       $columnEndTime INTEGER,
-      $columnCreatedAt INTEGER NOT NULL
+      $columnCreatedAt INTEGER NOT NULL,
+      $columnBankPlanId INTEGER
     )
   ''';
 
@@ -31,6 +33,7 @@ class PrayerRecordModel {
       columnStartTime: record.startTime.millisecondsSinceEpoch,
       columnEndTime: record.endTime?.millisecondsSinceEpoch,
       columnCreatedAt: record.createdAt.millisecondsSinceEpoch,
+      columnBankPlanId: record.bankPlanId,
     };
   }
 
@@ -48,6 +51,7 @@ class PrayerRecordModel {
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         map[columnCreatedAt] as int,
       ),
+      bankPlanId: map[columnBankPlanId] as int?,
     );
   }
 }

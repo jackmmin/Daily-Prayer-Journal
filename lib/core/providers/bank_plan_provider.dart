@@ -93,20 +93,21 @@ final bankPlanProvider =
 
 // ─── 계획별 누적 금액 계산 ────────────────────────────────────────────────────
 
-/// 특정 계획의 기간 내 기도 기록만 집계해 적립 금액을 반환한다.
+/// 특정 계획에 연결된 기도 기록만 집계해 적립 금액을 반환한다.
 final planSavingsProvider =
     FutureProvider.family<int, BankPlan>((ref, plan) async {
   // bankPlanProvider 변경 시 재계산
   ref.watch(bankPlanProvider);
 
   final allRecords = await sl<GetAllPrayerRecordsUseCase>().execute();
-  final start = _dateOnly(plan.startDate);
-  final end = _dateOnly(plan.endDate).add(const Duration(days: 1)); // 종료일 포함
 
   int totalSeconds = 0;
   for (final PrayerRecord record in allRecords) {
-    // 기도 시작 시간이 계획 기간에 포함되는 기록만 집계
-    if (!record.startTime.isBefore(start) && record.startTime.isBefore(end)) {
+    // plan.id로 연결된 기록만 집계 (id null이면 기간 기반 fallback)
+    final matched = plan.id != null
+        ? record.bankPlanId == plan.id
+        : _isInPlanPeriod(record, plan);
+    if (matched) {
       final duration = record.prayerDuration;
       if (duration != null && !duration.isNegative) {
         totalSeconds += duration.inSeconds;
@@ -116,5 +117,12 @@ final planSavingsProvider =
 
   return plan.calcEarned(totalSeconds);
 });
+
+/// bankPlanId가 없는 레거시 레코드를 기간으로 매칭
+bool _isInPlanPeriod(PrayerRecord record, BankPlan plan) {
+  final start = _dateOnly(plan.startDate);
+  final end = _dateOnly(plan.endDate).add(const Duration(days: 1));
+  return !record.startTime.isBefore(start) && record.startTime.isBefore(end);
+}
 
 DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);

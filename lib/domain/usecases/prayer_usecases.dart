@@ -16,8 +16,8 @@ class GetPrayerRecordsByDateUseCase {
 
   const GetPrayerRecordsByDateUseCase(this._repository);
 
-  Future<List<PrayerRecord>> execute(DateTime date) =>
-      _repository.getRecordsByDate(date);
+  Future<List<PrayerRecord>> execute(DateTime date, {int? bankPlanId}) =>
+      _repository.getRecordsByDate(date, bankPlanId: bankPlanId);
 }
 
 class SavePrayerRecordUseCase {
@@ -48,5 +48,6 @@ class GetRecordDatesUseCase {
 
   const GetRecordDatesUseCase(this._repository);
 
-  Future<Set<DateTime>> execute() => _repository.getRecordDates();
+  Future<Set<DateTime>> execute({int? bankPlanId}) =>
+      _repository.getRecordDates(bankPlanId: bankPlanId);
 }

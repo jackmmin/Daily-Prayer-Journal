@@ -14,8 +14,8 @@ class PrayerRepositoryImpl implements PrayerRepository {
       _localDataSource.getAllRecords();
 
   @override
-  Future<List<PrayerRecord>> getRecordsByDate(DateTime date) =>
-      _localDataSource.getRecordsByDate(date);
+  Future<List<PrayerRecord>> getRecordsByDate(DateTime date, {int? bankPlanId}) =>
+      _localDataSource.getRecordsByDate(date, bankPlanId: bankPlanId);
 
   @override
   Future<PrayerRecord?> getRecordById(int id) =>
@@ -33,5 +33,6 @@ class PrayerRepositoryImpl implements PrayerRepository {
   Future<void> deleteRecord(int id) => _localDataSource.deleteRecord(id);
 
   @override
-  Future<Set<DateTime>> getRecordDates() => _localDataSource.getRecordDates();
+  Future<Set<DateTime>> getRecordDates({int? bankPlanId}) =>
+      _localDataSource.getRecordDates(bankPlanId: bankPlanId);
 }
