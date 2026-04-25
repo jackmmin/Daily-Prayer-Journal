@@ -9,6 +9,7 @@ class TimerWidget extends StatelessWidget {
   final PrayerFormState state;
   final VoidCallback onStart;
   final VoidCallback onStop;
+  final VoidCallback onResume;
   final VoidCallback onReset;
 
   const TimerWidget({
@@ -16,6 +17,7 @@ class TimerWidget extends StatelessWidget {
     required this.state,
     required this.onStart,
     required this.onStop,
+    required this.onResume,
     required this.onReset,
   });
 
@@ -71,11 +73,19 @@ class TimerWidget extends StatelessWidget {
               _buildTimerButton(
                 context: context,
                 onPressed: onStop,
-                icon: Icons.stop_rounded,
-                label: '종료',
+                icon: Icons.pause_rounded,
+                label: '멈춤',
                 color: Colors.orange,
               ),
             ] else ...[
+              _buildTimerButton(
+                context: context,
+                onPressed: onResume,
+                icon: Icons.play_arrow_rounded,
+                label: '다시시작',
+                color: Colors.green,
+              ),
+              const Gap(12),
               _buildTimerButton(
                 context: context,
                 onPressed: onReset,
@@ -89,7 +99,7 @@ class TimerWidget extends StatelessWidget {
         if (state.isTimerStopped) ...[
           const Gap(8),
           Text(
-            '기도 시간이 기록되었습니다. 저장 버튼을 눌러주세요.',
+            '타이머가 멈췄습니다. 다시시작하거나 저장할 수 있습니다.',
             style: TextStyle(
               color: Colors.green.shade700,
               fontSize: 13,

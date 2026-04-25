@@ -96,6 +96,20 @@ class PrayerFormViewModel extends StateNotifier<PrayerFormState> {
     state = state.copyWith(timerStatus: TimerStatus.stopped);
   }
 
+  void resumeTimer() {
+    if (!state.isTimerStopped) return;
+
+    final alreadyElapsed = state.elapsedDuration;
+    final resumeTime = DateTime.now();
+
+    state = state.copyWith(timerStatus: TimerStatus.running);
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final additional = DateTime.now().difference(resumeTime);
+      state = state.copyWith(elapsedDuration: alreadyElapsed + additional);
+    });
+  }
+
   void resetTimer() {
     _timer?.cancel();
     _timer = null;

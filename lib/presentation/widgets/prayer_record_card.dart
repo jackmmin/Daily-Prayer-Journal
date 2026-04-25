@@ -18,7 +18,7 @@ class PrayerRecordCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  static final _timeFormat = DateFormat('HH:mm');
+  static final _timeFormat = DateFormat('HH:mm:ss');
 
   @override
   Widget build(BuildContext context) {

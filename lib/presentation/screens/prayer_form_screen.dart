@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_form_viewmodel.dart';
@@ -27,6 +26,7 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
   late DateTime _startTime;
   DateTime? _endTime;
   bool _useTimer = false;
+  bool _manualTimeEdited = false;
 
   @override
   void initState() {
@@ -173,8 +173,21 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
                     icon: Icons.keyboard,
                     isSelected: !_useTimer,
                     onTap: () {
+                      if (_useTimer && !_manualTimeEdited) {
+                        // 직접 입력에서 수동 편집 이력이 없을 때만 타이머 시간을 필드에 반영
+                        final timerState = ref.read(prayerFormViewModelProvider(widget.editingRecord));
+                        if (timerState.timerStartTime != null) {
+                          setState(() {
+                            _startTime = timerState.timerStartTime!;
+                            if (timerState.isTimerStopped) {
+                              _endTime = timerState.timerStartTime!.add(timerState.elapsedDuration);
+                            }
+                            _useTimer = false;
+                          });
+                          return;
+                        }
+                      }
                       setState(() => _useTimer = false);
-                      vm.resetTimer();
                     },
                   ),
                 ),
@@ -194,14 +207,23 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
               TimePickerField(
                 label: '시작 시간',
                 time: _startTime,
-                onChanged: (t) => setState(() => _startTime = t),
+                onChanged: (t) => setState(() {
+                  _startTime = t;
+                  _manualTimeEdited = true;
+                }),
               ),
               const Gap(12),
               TimePickerField(
                 label: '종료 시간 (선택)',
                 time: _endTime,
-                onChanged: (t) => setState(() => _endTime = t),
-                onCleared: () => setState(() => _endTime = null),
+                onChanged: (t) => setState(() {
+                  _endTime = t;
+                  _manualTimeEdited = true;
+                }),
+                onCleared: () => setState(() {
+                  _endTime = null;
+                  _manualTimeEdited = true;
+                }),
                 nullable: true,
               ),
             ] else ...[
@@ -209,6 +231,7 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
                 state: state,
                 onStart: vm.startTimer,
                 onStop: vm.stopTimer,
+                onResume: vm.resumeTimer,
                 onReset: vm.resetTimer,
               ),
             ],
