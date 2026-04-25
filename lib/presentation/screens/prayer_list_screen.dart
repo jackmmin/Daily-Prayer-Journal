@@ -60,17 +60,13 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       orElse: () => false,
     );
 
-    // 계획이 지정된 경우 AppBar 타이틀에 계획 기간 표시
-    final title = widget.initialPlan != null
-        ? '기도 일지 (${_planLabel(widget.initialPlan!)})'
-        : '기도통장';
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: const Text('기도통장'),
       ),
       body: Column(
         children: [
+          if (widget.initialPlan != null) _PlanInfoHeader(plan: widget.initialPlan!),
           const PrayerBankBanner(),
           DateSelectorBar(
             selectedDate: state.selectedDate,
@@ -90,12 +86,6 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
         onAddRecord: () => _navigateToForm(context),
       ),
     );
-  }
-
-  /// 계획 기간 레이블 (예: "4월 1일 ~ 4월 30일")
-  static String _planLabel(BankPlan plan) {
-    String fmt(DateTime d) => '${d.month}월 ${d.day}일';
-    return '${fmt(plan.startDate)} ~ ${fmt(plan.endDate)}';
   }
 
   /// 선택된 날짜가 특정 계획 기간에 포함되는지 확인
@@ -231,6 +221,44 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       await vm.deleteRecord(record.id!);
       ref.invalidate(planSavingsProvider);
     }
+  }
+}
+
+/// 기도일지 목록 상단 계획 정보 헤더
+class _PlanInfoHeader extends StatelessWidget {
+  final BankPlan plan;
+
+  const _PlanInfoHeader({required this.plan});
+
+  static String _fmt(DateTime d) => '${d.month}월 ${d.day}일';
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: colorScheme.primaryContainer,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            plan.title.isNotEmpty ? plan.title : '기도통장 계획',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${_fmt(plan.startDate)} ~ ${_fmt(plan.endDate)}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

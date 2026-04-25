@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 
 import '../../core/providers/bank_plan_provider.dart';
 import '../../domain/entities/bank_plan.dart';
-import '../screens/bank_plan_screen.dart';
 
 /// 목록 화면 상단 기도통장 배너.
 /// 진행 중인 계획이 있으면 해당 계획의 누적 금액을 표시한다.
@@ -20,38 +19,25 @@ class PrayerBankBanner extends ConsumerWidget {
     final plansAsync = ref.watch(bankPlanProvider);
     final color = Theme.of(context).colorScheme.primary;
 
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const BankPlanScreen()),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withValues(alpha: 0.85), color],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.85), color],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: plansAsync.when(
-          loading: () => const _BannerLoading(),
-          error: (_, __) => const _BannerError(),
-          data: (plans) {
-            final active = plans.where((p) => p.isActive).toList();
-            if (active.isEmpty) return const _BannerNoPlan();
-            // 진행 중인 계획이 여러 개면 첫 번째만 표시
-            return _BannerActivePlan(plan: active.first);
-          },
-        ),
+      child: plansAsync.when(
+        loading: () => const _BannerLoading(),
+        error: (_, __) => const _BannerError(),
+        data: (plans) {
+          final active = plans.where((p) => p.isActive).toList();
+          if (active.isEmpty) return const _BannerNoPlan();
+          // 진행 중인 계획이 여러 개면 첫 번째만 표시
+          return _BannerActivePlan(plan: active.first);
+        },
       ),
     );
   }
@@ -101,16 +87,9 @@ class _BannerActivePlan extends ConsumerWidget {
             ],
           ),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
-            const SizedBox(height: 2),
-            Text(
-              '${plan.minutes}분 = ${_formatAmount(plan.amount)}원',
-              style: const TextStyle(color: Colors.white70, fontSize: 11),
-            ),
-          ],
+        Text(
+          '${plan.minutes}분 = ${_formatAmount(plan.amount)}원',
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
         ),
       ],
     );
@@ -141,7 +120,6 @@ class _BannerNoPlan extends StatelessWidget {
             ],
           ),
         ),
-        Icon(Icons.chevron_right, color: Colors.white54, size: 18),
       ],
     );
   }
