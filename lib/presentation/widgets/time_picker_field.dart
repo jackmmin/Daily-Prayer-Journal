@@ -61,6 +61,11 @@ class TimePickerField extends StatelessWidget {
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(base),
+      // 기기 설정과 무관하게 24시간 형식으로 표시
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
     );
     if (pickedTime == null) return;
 
