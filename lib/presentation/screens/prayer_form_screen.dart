@@ -76,9 +76,17 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
     final state = ref.watch(vmProvider);
     final vm = ref.read(vmProvider.notifier);
 
-    // 저장 완료 시 화면 닫기
+    // 저장 완료 시 토스트 표시 후 화면 닫기
     ref.listen(vmProvider, (previous, next) {
+      if (!context.mounted) return;
       if (!previous!.isSaved && next.isSaved) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('저장되었습니다.'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
         Navigator.of(context).pop();
       }
       if (next.errorMessage != null) {
@@ -93,7 +101,7 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
         title: Text(widget.editingRecord == null ? '기도 기록 추가' : '기도 기록 수정'),
         actions: [
           TextButton(
-            onPressed: state.isSaving
+            onPressed: (state.isSaving || state.isSaved)
                 ? null
                 : () {
                     FocusScope.of(context).unfocus();
