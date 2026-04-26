@@ -57,34 +57,66 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       orElse: () => false,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('기도 일지'),
-        actions: [
-          PopupMenuButton<PrayerSortOrder>(
-            icon: const Icon(Icons.sort),
-            tooltip: '정렬',
-            initialValue: state.sortOrder,
-            onSelected: vm.setSortOrder,
-            itemBuilder: (_) => PrayerSortOrder.values.map((order) {
-              return PopupMenuItem(
-                value: order,
-                child: Row(
-                  children: [
-                    Icon(
-                      state.sortOrder == order ? Icons.check : null,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(order.label),
-                  ],
+    return PopScope(
+      // 선택 모드일 때 뒤로가기는 선택 모드 해제로 처리
+      canPop: !state.isSelectMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && state.isSelectMode) vm.exitSelectMode();
+      },
+      child: Scaffold(
+      appBar: state.isSelectMode
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: vm.exitSelectMode,
+              ),
+              title: Text('${state.selectedIds.length}개 선택'),
+              actions: [
+                // 전체 선택/해제 버튼
+                TextButton(
+                  onPressed: vm.toggleSelectAll,
+                  child: Text(
+                    state.selectedIds.length == state.records.length ? '전체 해제' : '전체 선택',
+                  ),
                 ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+                // 선택 삭제 버튼
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: Colors.red.shade400,
+                  tooltip: '선택 삭제',
+                  onPressed: state.selectedIds.isEmpty
+                      ? null
+                      : () => _confirmDeleteSelected(context, vm),
+                ),
+              ],
+            )
+          : AppBar(
+              title: const Text('기도 일지'),
+              actions: [
+                PopupMenuButton<PrayerSortOrder>(
+                  icon: const Icon(Icons.sort),
+                  tooltip: '정렬',
+                  initialValue: state.sortOrder,
+                  onSelected: vm.setSortOrder,
+                  itemBuilder: (_) => PrayerSortOrder.values.map((order) {
+                    return PopupMenuItem(
+                      value: order,
+                      child: Row(
+                        children: [
+                          Icon(
+                            state.sortOrder == order ? Icons.check : null,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(order.label),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
       body: Column(
         children: [
           if (widget.initialPlan != null) PlanInfoHeader(plan: widget.initialPlan!),
@@ -104,9 +136,10 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
         endDate: state.endDate,
         recordDates: state.recordDates,
         onRangeChanged: vm.changeRange,
-        canAddRecord: canAddRecord,
+        canAddRecord: canAddRecord && !state.isSelectMode,
         onAddRecord: () => _navigateToForm(context),
       ),
+    ),
     );
   }
 
@@ -181,7 +214,14 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
             padding: const EdgeInsets.only(bottom: 12),
             child: PrayerRecordCard(
               record: record,
-              onTap: () => _navigateToForm(context, record: record),
+              isSelectMode: state.isSelectMode,
+              isSelected: record.id != null && state.selectedIds.contains(record.id),
+              onTap: state.isSelectMode
+                  ? () { if (record.id != null) vm.toggleSelect(record.id!); }
+                  : () => _navigateToForm(context, record: record),
+              onLongPress: state.isSelectMode || record.id == null
+                  ? null
+                  : () => vm.enterSelectMode(record.id!),
               onDelete: () => _confirmDelete(context, vm, record),
             ),
           );
@@ -206,6 +246,35 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     );
     ref.read(prayerListViewModelProvider(_bankPlanId).notifier).loadRecords();
     ref.invalidate(planSavingsProvider);
+  }
+
+  Future<void> _confirmDeleteSelected(
+    BuildContext context,
+    PrayerListViewModel vm,
+  ) async {
+    final count = ref.read(prayerListViewModelProvider(_bankPlanId)).selectedIds.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('기도 기록 삭제'),
+        content: Text('선택한 $count개의 기록을 삭제하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await vm.deleteSelected();
+      ref.invalidate(planSavingsProvider);
+    }
   }
 
   Future<void> _confirmDelete(

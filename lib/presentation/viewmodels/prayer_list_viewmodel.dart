@@ -63,6 +63,10 @@ class PrayerListState {
   final int? bankPlanId;
   /// 현재 정렬 기준
   final PrayerSortOrder sortOrder;
+  /// 다중 선택 모드 활성 여부
+  final bool isSelectMode;
+  /// 선택된 기록 ID 집합
+  final Set<int> selectedIds;
 
   const PrayerListState({
     this.records = const [],
@@ -73,6 +77,8 @@ class PrayerListState {
     this.recordDates = const {},
     this.bankPlanId,
     this.sortOrder = PrayerSortOrder.timeDesc,
+    this.isSelectMode = false,
+    this.selectedIds = const {},
   });
 
   PrayerListState copyWith({
@@ -85,6 +91,8 @@ class PrayerListState {
     bool clearError = false,
     int? bankPlanId,
     PrayerSortOrder? sortOrder,
+    bool? isSelectMode,
+    Set<int>? selectedIds,
   }) {
     return PrayerListState(
       records: records ?? this.records,
@@ -95,6 +103,8 @@ class PrayerListState {
       recordDates: recordDates ?? this.recordDates,
       bankPlanId: bankPlanId ?? this.bankPlanId,
       sortOrder: sortOrder ?? this.sortOrder,
+      isSelectMode: isSelectMode ?? this.isSelectMode,
+      selectedIds: selectedIds ?? this.selectedIds,
     );
   }
 }
@@ -160,6 +170,50 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
   Future<void> deleteRecord(int id) async {
     try {
       await _deleteUseCase.execute(id);
+      await loadRecords();
+    } catch (e) {
+      state = state.copyWith(errorMessage: '삭제에 실패했습니다.');
+    }
+  }
+
+  /// 선택 모드 시작 (첫 번째 항목 자동 선택)
+  void enterSelectMode(int id) {
+    state = state.copyWith(isSelectMode: true, selectedIds: {id});
+  }
+
+  /// 선택 모드 종료 및 선택 초기화
+  void exitSelectMode() {
+    state = state.copyWith(isSelectMode: false, selectedIds: {});
+  }
+
+  /// 항목 선택/해제 토글
+  void toggleSelect(int id) {
+    final updated = Set<int>.from(state.selectedIds);
+    if (updated.contains(id)) {
+      updated.remove(id);
+    } else {
+      updated.add(id);
+    }
+    // 선택 항목이 0개가 되면 선택 모드도 종료
+    if (updated.isEmpty) {
+      state = state.copyWith(isSelectMode: false, selectedIds: {});
+    } else {
+      state = state.copyWith(selectedIds: updated);
+    }
+  }
+
+  /// 전체 선택/해제 토글
+  void toggleSelectAll() {
+    final allIds = state.records.map((r) => r.id).whereType<int>().toSet();
+    final allSelected = allIds.every((id) => state.selectedIds.contains(id));
+    state = state.copyWith(selectedIds: allSelected ? {} : allIds);
+  }
+
+  /// 선택된 항목 일괄 삭제
+  Future<void> deleteSelected() async {
+    try {
+      await Future.wait(state.selectedIds.map((id) => _deleteUseCase.execute(id)));
+      state = state.copyWith(isSelectMode: false, selectedIds: {});
       await loadRecords();
     } catch (e) {
       state = state.copyWith(errorMessage: '삭제에 실패했습니다.');

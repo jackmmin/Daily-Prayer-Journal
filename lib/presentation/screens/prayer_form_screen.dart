@@ -101,41 +101,45 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (widget.bankPlan != null) ...[
-                BankPlanBanner(plan: widget.bankPlan!),
+      body: GestureDetector(
+        // input 영역 외 터치 시 키보드 숨기기
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.bankPlan != null) ...[
+                  BankPlanBanner(plan: widget.bankPlan!),
+                  const Gap(16),
+                ],
+                _buildTitleField(),
                 const Gap(16),
+                _buildContentField(),
+                const Gap(20),
+                PrayerTimeSection(
+                  editingRecord: widget.editingRecord,
+                  state: state,
+                  vm: vm,
+                  startTime: _startTime,
+                  endTime: _endTime,
+                  useTimer: _useTimer,
+                  manualTimeEdited: _manualTimeEdited,
+                  onStartTimeChanged: (t) => setState(() {
+                    _startTime = t;
+                    _manualTimeEdited = true;
+                  }),
+                  onEndTimeChanged: (t) => setState(() {
+                    _endTime = t;
+                    _manualTimeEdited = true;
+                  }),
+                  onUseTimerChanged: (v) => setState(() => _useTimer = v),
+                ),
+                const Gap(80),
               ],
-              _buildTitleField(),
-              const Gap(16),
-              _buildContentField(),
-              const Gap(20),
-              PrayerTimeSection(
-                editingRecord: widget.editingRecord,
-                state: state,
-                vm: vm,
-                startTime: _startTime,
-                endTime: _endTime,
-                useTimer: _useTimer,
-                manualTimeEdited: _manualTimeEdited,
-                onStartTimeChanged: (t) => setState(() {
-                  _startTime = t;
-                  _manualTimeEdited = true;
-                }),
-                onEndTimeChanged: (t) => setState(() {
-                  _endTime = t;
-                  _manualTimeEdited = true;
-                }),
-                onUseTimerChanged: (v) => setState(() => _useTimer = v),
-              ),
-              const Gap(80),
-            ],
+            ),
           ),
         ),
       ),
@@ -200,6 +204,28 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
 
   void _save(PrayerFormViewModel vm) {
     if (_formKey.currentState?.validate() != true) return;
+
+    // 미래 시간으로 저장 불가 검증
+    final now = DateTime.now();
+    if (_startTime.isAfter(now)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('시작 시간이 현재 시각보다 미래일 수 없습니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    if (_endTime != null && _endTime!.isAfter(now)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('종료 시간이 현재 시각보다 미래일 수 없습니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     vm.saveRecord(
       title: _titleController.text,
       content: _contentController.text,
