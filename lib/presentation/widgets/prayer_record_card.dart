@@ -15,10 +15,12 @@ class PrayerRecordCard extends StatelessWidget {
   final bool isSelectMode;
   /// 현재 카드가 선택된 상태인지
   final bool isSelected;
-  /// 꾹 눌렀을 때 콜백 (삭제 확인)
+  /// 꾹 눌렀을 때 콜백 (삭제 버튼 표시)
   final VoidCallback? onLongPress;
   /// 연결된 기도통장 계획 (적립금 계산용)
   final BankPlan? bankPlan;
+  /// 현재 롱프레스된 카드인지 (강조 테두리 표시)
+  final bool isLongPressed;
 
   const PrayerRecordCard({
     super.key,
@@ -29,6 +31,7 @@ class PrayerRecordCard extends StatelessWidget {
     this.isSelected = false,
     this.onLongPress,
     this.bankPlan,
+    this.isLongPressed = false,
   });
 
   static final _dateTimeFormat = DateFormat('M월d일 HH:mm');
@@ -38,14 +41,21 @@ class PrayerRecordCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      // 선택된 카드는 테두리 강조
-      shape: isSelected
+      // 선택된 카드는 주색상, 롱프레스된 카드는 붉은색 테두리 강조
+      shape: isSelected || isLongPressed
           ? RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: colorScheme.primary, width: 2),
+              side: BorderSide(
+                color: isLongPressed ? Colors.red.shade300 : colorScheme.primary,
+                width: 2,
+              ),
             )
           : null,
-      color: isSelected ? colorScheme.primaryContainer.withValues(alpha: 0.4) : null,
+      color: isSelected
+          ? colorScheme.primaryContainer.withValues(alpha: 0.4)
+          : isLongPressed
+              ? Colors.red.shade50.withValues(alpha: 0.6)
+              : null,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,

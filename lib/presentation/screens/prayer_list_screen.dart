@@ -26,6 +26,8 @@ class PrayerListScreen extends ConsumerStatefulWidget {
 
 class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
   late final int? _bankPlanId;
+  /// 롱프레스된 카드 (삭제 버튼 표시 대상)
+  PrayerRecord? _longPressedRecord;
 
   @override
   void initState() {
@@ -36,6 +38,10 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       final today = _dateOnly(DateTime.now().toLocal());
       ref.read(prayerListViewModelProvider(_bankPlanId).notifier).changeRange(today, today);
     });
+  }
+
+  void _setLongPressed(PrayerRecord? record) {
+    setState(() => _longPressedRecord = record);
   }
 
   static DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
@@ -104,7 +110,14 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
             onNext: vm.moveNext,
             disableNext: false,
           ),
-          _DateRangeSummaryBar(records: state.records),
+          _DateRangeSummaryBar(
+            records: state.records,
+            longPressedRecord: _longPressedRecord,
+            onDeleteLongPressed: _longPressedRecord == null
+                ? null
+                : () => _confirmDelete(context, vm, _longPressedRecord!),
+            onDismissLongPress: () => _setLongPressed(null),
+          ),
           Expanded(child: _buildBody(context, state, vm, canAddRecord)),
         ],
       ),
@@ -194,12 +207,16 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
               bankPlan: widget.initialPlan,
               isSelectMode: state.isSelectMode,
               isSelected: record.id != null && state.selectedIds.contains(record.id),
+              isLongPressed: _longPressedRecord?.id == record.id,
               onTap: state.isSelectMode
                   ? () { if (record.id != null) vm.toggleSelect(record.id!); }
-                  : () => _navigateToForm(context, record: record),
+                  : () {
+                      _setLongPressed(null); // 다른 카드 탭 시 롱프레스 해제
+                      _navigateToForm(context, record: record);
+                    },
               onLongPress: state.isSelectMode || record.id == null
                   ? null
-                  : () => _confirmDelete(context, vm, record),
+                  : () => _setLongPressed(record),
               onDelete: () => _confirmDelete(context, vm, record),
             ),
           );
@@ -286,10 +303,19 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
 }
 
 /// 날짜 범위 내 조회된 기도 기록의 누적 시간 요약 바.
+/// 롱프레스된 카드가 있을 때 오른쪽에 삭제 버튼 표시.
 class _DateRangeSummaryBar extends StatelessWidget {
   final List<PrayerRecord> records;
+  final PrayerRecord? longPressedRecord;
+  final VoidCallback? onDeleteLongPressed;
+  final VoidCallback onDismissLongPress;
 
-  const _DateRangeSummaryBar({required this.records});
+  const _DateRangeSummaryBar({
+    required this.records,
+    required this.onDismissLongPress,
+    this.longPressedRecord,
+    this.onDeleteLongPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -300,27 +326,57 @@ class _DateRangeSummaryBar extends StatelessWidget {
     }
 
     final colorScheme = Theme.of(context).colorScheme;
+    final isDeleteMode = longPressedRecord != null;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      color: colorScheme.surfaceContainerHighest,
-      child: Row(
-        children: [
-          Text(
-            '누적 기도시간',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-          ),
-          const Spacer(),
-          Text(
-            '총 기도시간 $totalMinutes분',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.primary,
+    return GestureDetector(
+      // 요약 바 탭 시 롱프레스 해제
+      onTap: isDeleteMode ? onDismissLongPress : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        color: colorScheme.surfaceContainerHighest,
+        child: Row(
+          children: [
+            Text(
+              '누적 기도시간',
+              style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
             ),
-          ),
-        ],
+            const Spacer(),
+            if (isDeleteMode)
+              // 롱프레스 중: 삭제 버튼 표시
+              GestureDetector(
+                onTap: onDeleteLongPressed,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade400,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.delete_outline, size: 14, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        '삭제',
+                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              // 기본: 총 기도시간 표시
+              Text(
+                '총 기도시간 $totalMinutes분',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.primary,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
