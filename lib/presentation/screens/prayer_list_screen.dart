@@ -12,6 +12,7 @@ import '../widgets/date_range_selector_bar.dart';
 import '../widgets/prayer_bank_banner.dart';
 import '../widgets/prayer_list/plan_info_header.dart';
 import '../widgets/prayer_list/bottom_action_bar.dart';
+import '../widgets/prayer_list/sort_filter_sheet.dart';
 import 'prayer_form_screen.dart';
 
 class PrayerListScreen extends ConsumerStatefulWidget {
@@ -104,7 +105,14 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
             onNext: vm.moveNext,
             disableNext: false,
           ),
-          _DateRangeSummaryBar(records: state.records),
+          _DateRangeSummaryBar(
+            records: state.records,
+            plan: widget.initialPlan,
+            isSelectMode: state.isSelectMode,
+            selectedCount: state.selectedIds.length,
+            onFilter: () => _showSortSheet(context, state, vm),
+            onDeleteSelected: () => _confirmDeleteSelected(context, vm),
+          ),
           Expanded(child: _buildBody(context, state, vm, canAddRecord)),
         ],
       ),
@@ -208,6 +216,23 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     );
   }
 
+  void _showSortSheet(
+    BuildContext context,
+    PrayerListState state,
+    PrayerListViewModel vm,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SortFilterSheet(
+        current: state.sortOrder,
+        onSelected: (order) {
+          Navigator.pop(context);
+          vm.setSortOrder(order);
+        },
+      ),
+    );
+  }
+
   Future<void> _navigateToForm(BuildContext context, {PrayerRecord? record}) async {
     // 새 기록 작성 시 현재 선택된 날짜를 기본 시작시간 날짜로 전달
     final selectedDate = record == null
@@ -285,11 +310,23 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
   }
 }
 
-/// 날짜 범위 내 조회된 기도 기록의 누적 시간 요약 바.
+/// 날짜 범위 내 기도 기록 요약 바: 총 기도시간 + 총 적립금 / 필터(또는 삭제) 버튼
 class _DateRangeSummaryBar extends StatelessWidget {
   final List<PrayerRecord> records;
+  final BankPlan? plan;
+  final bool isSelectMode;
+  final int selectedCount;
+  final VoidCallback onFilter;
+  final VoidCallback onDeleteSelected;
 
-  const _DateRangeSummaryBar({required this.records});
+  const _DateRangeSummaryBar({
+    required this.records,
+    required this.plan,
+    required this.isSelectMode,
+    required this.selectedCount,
+    required this.onFilter,
+    required this.onDeleteSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -299,31 +336,73 @@ class _DateRangeSummaryBar extends StatelessWidget {
       if (d != null && !d.isNegative) totalMinutes += d.inMinutes;
     }
 
-    if (records.isEmpty) return const SizedBox.shrink();
+    // 적립금: plan이 있을 때만 계산
+    final int totalEarned = (plan != null)
+        ? plan!.calcEarned(totalMinutes * 60)
+        : 0;
 
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       color: colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
+          // 총 기도시간
           Text(
-            '누적 기도시간',
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-          ),
-          const Spacer(),
-          Text(
-            '총 기도시간 $totalMinutes분',
+            '총 $totalMinutes분',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: colorScheme.primary,
             ),
           ),
+          if (plan != null) ...[
+            const SizedBox(width: 12),
+            Text(
+              '적립 ${_formatMoney(totalEarned)}원',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.secondary,
+              ),
+            ),
+          ],
+          const Spacer(),
+          // 롱프레스 선택 모드 → 삭제 버튼, 일반 모드 → 필터 버튼
+          if (isSelectMode)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              color: Colors.red.shade400,
+              tooltip: '선택 삭제',
+              iconSize: 22,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: selectedCount > 0 ? onDeleteSelected : null,
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.sort),
+              tooltip: '정렬/필터',
+              iconSize: 22,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: onFilter,
+            ),
         ],
       ),
     );
+  }
+
+  String _formatMoney(int amount) {
+    if (amount == 0) return '0';
+    final s = amount.toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
   }
 }
