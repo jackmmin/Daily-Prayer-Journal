@@ -128,6 +128,7 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
             onNext: vm.moveNext,
             disableNext: false,
           ),
+          _DateRangeSummaryBar(records: state.records),
           Expanded(child: _buildBody(context, state, vm, canAddRecord)),
         ],
       ),
@@ -304,5 +305,46 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       await vm.deleteRecord(record.id!);
       ref.invalidate(planSavingsProvider);
     }
+  }
+}
+
+/// 날짜 범위 내 조회된 기도 기록의 누적 금액 및 누적 시간(분) 요약 바.
+class _DateRangeSummaryBar extends StatelessWidget {
+  final List<PrayerRecord> records;
+
+  const _DateRangeSummaryBar({required this.records});
+
+  @override
+  Widget build(BuildContext context) {
+    int totalMinutes = 0;
+    for (final r in records) {
+      final d = r.prayerDuration;
+      if (d != null && !d.isNegative) totalMinutes += d.inMinutes;
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      color: colorScheme.surfaceContainerHighest,
+      child: Row(
+        children: [
+          Text(
+            '기도 ${records.length}건',
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          ),
+          const Spacer(),
+          Text(
+            '총 ${totalMinutes}분',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

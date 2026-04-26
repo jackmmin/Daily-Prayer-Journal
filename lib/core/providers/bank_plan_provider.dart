@@ -159,6 +159,29 @@ final planSavingsProvider =
   return plan.calcEarned(totalMinutes * 60);
 });
 
+/// 특정 계획에 연결된 기도 기록의 총 누적 시간(분)을 반환한다.
+final planTotalMinutesProvider =
+    FutureProvider.family<int, BankPlan>((ref, plan) async {
+  ref.watch(bankPlanProvider);
+
+  final allRecords = await sl<GetAllPrayerRecordsUseCase>().execute();
+
+  int totalMinutes = 0;
+  for (final PrayerRecord record in allRecords) {
+    final matched = plan.id != null
+        ? record.bankPlanId == plan.id
+        : _isInPlanPeriod(record, plan);
+    if (matched) {
+      final duration = record.prayerDuration;
+      if (duration != null && !duration.isNegative) {
+        totalMinutes += duration.inMinutes;
+      }
+    }
+  }
+
+  return totalMinutes;
+});
+
 /// bankPlanId가 없는 레거시 레코드를 기간으로 매칭
 bool _isInPlanPeriod(PrayerRecord record, BankPlan plan) {
   final start = _dateOnly(plan.startDate);

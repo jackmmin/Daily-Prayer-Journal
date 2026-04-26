@@ -15,8 +15,6 @@ class PrayerBankBanner extends ConsumerWidget {
 
   const PrayerBankBanner({super.key, this.selectedPlan});
 
-  static final _dateFmt = DateFormat('M월 d일');
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final color = Theme.of(context).colorScheme.primary;
@@ -66,6 +64,7 @@ class _BannerActivePlan extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final savingsAsync = ref.watch(planSavingsProvider(plan));
+    final totalMinutesAsync = ref.watch(planTotalMinutesProvider(plan));
 
     return Row(
       children: [
@@ -99,9 +98,23 @@ class _BannerActivePlan extends ConsumerWidget {
             ],
           ),
         ),
-        Text(
-          '${plan.minutes}분 = ${_formatAmount(plan.amount)}원',
-          style: const TextStyle(color: Colors.white70, fontSize: 11),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${plan.minutes}분 = ${_formatAmount(plan.amount)}원',
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
+            ),
+            const SizedBox(height: 4),
+            totalMinutesAsync.when(
+              data: (mins) => Text(
+                '총 ${mins}분',
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              loading: () => const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+          ],
         ),
       ],
     );

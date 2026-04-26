@@ -47,7 +47,7 @@ class PrayerRecordCard extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -86,7 +86,7 @@ class PrayerRecordCard extends StatelessWidget {
                 ],
               ),
               if (record.content.isNotEmpty) ...[
-                const Gap(6),
+                const Gap(4),
                 Text(
                   record.content,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -96,9 +96,9 @@ class PrayerRecordCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              const Gap(10),
+              const Gap(6),
               const Divider(height: 1),
-              const Gap(10),
+              const Gap(6),
               _buildTimeRow(context),
             ],
           ),
@@ -146,11 +146,5 @@ class PrayerRecordCard extends StatelessWidget {
     );
   }
 
-  String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-
-    if (hours > 0) return '$hours시간 $minutes분';
-    return '$minutes분';
-  }
+  String _formatDuration(Duration duration) => '${duration.inMinutes}분';
 }
