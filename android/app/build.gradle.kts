@@ -45,6 +45,20 @@ android {
         }
     }
 
+    // APK 출력 파일 이름 지정: Daily_Prayer-{버전}-{ABI or universal}-{빌드타입}.apk
+    // splits와 충돌 방지를 위해 filter로 BaseVariantOutputImpl만 처리
+    applicationVariants.all {
+        val variant = this
+        variant.outputs
+            .mapNotNull { it as? com.android.build.gradle.internal.api.BaseVariantOutputImpl }
+            .forEach { output ->
+                val abiFilter = output.getFilter(com.android.build.api.variant.FilterConfiguration.FilterType.ABI)
+                val abiSuffix = if (abiFilter != null) "-$abiFilter" else "-universal"
+                output.outputFileName =
+                    "Daily_Prayer-${variant.versionName}$abiSuffix-${variant.buildType.name}.apk"
+            }
+    }
+
     // ABI별 APK 분리: arm64-v8a 단독 APK는 전체 대비 약 40% 용량 감소
     splits {
         abi {
