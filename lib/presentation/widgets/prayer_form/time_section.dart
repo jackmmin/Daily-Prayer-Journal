@@ -119,7 +119,7 @@ class _PrayerTimeSectionState extends State<PrayerTimeSection> {
                   onChanged: (t) {
                     widget.onStartTimeChanged(t);
                     // 종료 시간이 시작 시간보다 앞서면 시작+1분으로 자동 보정
-                    if (widget.endTime != null && !widget.endTime!.isAfter(t)) {
+                    if (widget.endTime != null && widget.endTime!.isBefore(t)) {
                       widget.onEndTimeChanged(t.add(const Duration(minutes: 1)));
                     }
                   },
@@ -129,10 +129,10 @@ class _PrayerTimeSectionState extends State<PrayerTimeSection> {
                   label: '종료 시간',
                   time: widget.endTime,
                   onChanged: (t) {
-                    if (!t.isAfter(widget.startTime)) {
+                    if (t.isBefore(widget.startTime)) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('종료 시간은 시작 시간보다 늦어야 합니다'),
+                          content: Text('종료 시간은 시작 시간보다 앞설 수 없습니다'),
                           duration: Duration(seconds: 2),
                           behavior: SnackBarBehavior.floating,
                         ),
