@@ -7,6 +7,7 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/providers/bank_plan_provider.dart';
+import '../../core/utils/toast_utils.dart';
 import '../../domain/entities/bank_plan.dart';
 import 'calendar_picker_dialog.dart';
 
@@ -113,9 +114,7 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
-    );
+    showErrorToast(context, msg);
   }
 
   @override

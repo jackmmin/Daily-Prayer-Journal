@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
+import '../../../core/utils/toast_utils.dart';
 import '../../../domain/entities/prayer_record.dart';
 import '../../viewmodels/prayer_form_viewmodel.dart';
 import '../timer_widget.dart';
@@ -130,13 +131,7 @@ class _PrayerTimeSectionState extends State<PrayerTimeSection> {
                   time: widget.endTime,
                   onChanged: (t) {
                     if (t.isBefore(widget.startTime)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('종료 시간은 시작 시간보다 앞설 수 없습니다'),
-                          duration: Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                      showInfoToast(context, '종료 시간은 시작 시간보다 앞설 수 없습니다');
                       return;
                     }
                     widget.onEndTimeChanged(t);

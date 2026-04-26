@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/bank_plan_provider.dart';
+import '../../core/utils/toast_utils.dart';
 import '../../domain/entities/bank_plan.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_list_viewmodel.dart';
@@ -62,18 +63,10 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     ref.listen(prayerListViewModelProvider(_bankPlanId), (previous, next) {
       if (!context.mounted) return;
       if (previous?.isDeleted == false && next.isDeleted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('삭제되었습니다.'),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        showInfoToast(context, '삭제되었습니다.');
       }
       if (previous?.errorMessage == null && next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!), backgroundColor: Colors.red),
-        );
+        showErrorToast(context, next.errorMessage!);
       }
     });
 

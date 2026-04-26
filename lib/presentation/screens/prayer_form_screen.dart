@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
 import '../../core/utils/emoji_length_formatter.dart';
+import '../../core/utils/toast_utils.dart';
 import '../../domain/entities/bank_plan.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_form_viewmodel.dart';
@@ -80,19 +81,11 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
     ref.listen(vmProvider, (previous, next) {
       if (!context.mounted) return;
       if (!previous!.isSaved && next.isSaved) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('저장되었습니다.'),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        showInfoToast(context, '저장되었습니다.');
         Navigator.of(context).pop();
       }
       if (next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!), backgroundColor: Colors.red),
-        );
+        showErrorToast(context, next.errorMessage!);
       }
     });
 
@@ -232,34 +225,18 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
     // 타이머 탭 선택 시 기록된 시간이 없으면 저장 불가
     final state = ref.read(prayerFormViewModelProvider(widget.editingRecord));
     if (_useTimer && !state.isTimerStopped) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('타이머 기록이 없습니다.'),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      showInfoToast(context, '타이머 기록이 없습니다.');
       return;
     }
 
     // 미래 시간으로 저장 불가 검증
     final now = DateTime.now();
     if (_startTime.isAfter(now)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('시작 시간이 현재 시각보다 미래일 수 없습니다.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorToast(context, '시작 시간이 현재 시각보다 미래일 수 없습니다.');
       return;
     }
     if (_endTime != null && _endTime!.isAfter(now)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('종료 시간이 현재 시각보다 미래일 수 없습니다.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorToast(context, '종료 시간이 현재 시각보다 미래일 수 없습니다.');
       return;
     }
 

@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../core/di/injection_container.dart';
 import '../../../core/providers/bank_plan_provider.dart';
 import '../../../core/services/excel_export_service.dart';
+import '../../../core/utils/toast_utils.dart';
 import '../../../domain/entities/bank_plan.dart';
 import '../../../domain/usecases/prayer_usecases.dart';
 import '../bank_plan_form_sheet.dart';
@@ -199,27 +200,12 @@ class _HomeActivePlanCardState extends ConsumerState<HomeActivePlanCard> {
       await ExcelExportService.exportPrayerRecords(plan: widget.plan, records: records);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('엑셀 파일이 저장되었습니다.'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 3),
-          ),
-        );
+        showSuccessToast(context, '엑셀 파일이 저장되었습니다.', duration: const Duration(seconds: 3));
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.of(context).pop(); // 로딩 닫기
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('내보내기 실패: $e'), backgroundColor: Colors.red),
-        );
+        showErrorToast(context, '내보내기 실패: $e');
       }
     } finally {
       if (mounted) setState(() => _isExporting = false);
