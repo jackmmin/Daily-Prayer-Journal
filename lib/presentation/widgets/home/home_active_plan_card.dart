@@ -13,19 +13,27 @@ import '../../../domain/entities/bank_plan.dart';
 import '../../../domain/usecases/prayer_usecases.dart';
 import '../bank_plan_form_sheet.dart';
 
-class HomeActivePlanCard extends ConsumerWidget {
+class HomeActivePlanCard extends ConsumerStatefulWidget {
   final BankPlan plan;
   const HomeActivePlanCard({super.key, required this.plan});
 
+  @override
+  ConsumerState<HomeActivePlanCard> createState() => _HomeActivePlanCardState();
+}
+
+class _HomeActivePlanCardState extends ConsumerState<HomeActivePlanCard> {
   static final _dateFmt = DateFormat('M월 d일');
 
+  // 엑셀 다운로드 중복 실행 방지 플래그
+  bool _isExporting = false;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final savingsAsync = ref.watch(planSavingsProvider(plan));
+  Widget build(BuildContext context) {
+    final savingsAsync = ref.watch(planSavingsProvider(widget.plan));
 
     final today = DateTime.now();
-    final totalDays = plan.endDate.difference(plan.startDate).inDays + 1;
-    final passedDays = today.difference(plan.startDate).inDays + 1;
+    final totalDays = widget.plan.endDate.difference(widget.plan.startDate).inDays + 1;
+    final passedDays = today.difference(widget.plan.startDate).inDays + 1;
     final progress = (passedDays / totalDays).clamp(0.0, 1.0);
 
     return Column(
@@ -36,7 +44,7 @@ class HomeActivePlanCard extends ConsumerWidget {
             const Icon(Icons.savings_outlined, color: Colors.white, size: 22),
             const Gap(8),
             Text(
-              plan.title.isNotEmpty ? plan.title : '진행 중인 기도통장',
+              widget.plan.title.isNotEmpty ? widget.plan.title : '진행 중인 기도통장',
               style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
             const Spacer(),
@@ -55,7 +63,7 @@ class HomeActivePlanCard extends ConsumerWidget {
             PopupMenuButton<String>(
               onSelected: (v) {
                 if (v == 'edit') _openEdit(context);
-                if (v == 'delete') _confirmDelete(context, ref);
+                if (v == 'delete') _confirmDelete(context);
                 if (v == 'export') _exportExcel(context);
               },
               icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
@@ -95,7 +103,7 @@ class HomeActivePlanCard extends ConsumerWidget {
         ),
         const Gap(4),
         Text(
-          '${plan.minutes}분 기도 → ${_formatAmount(plan.amount)}원 적립',
+          '${widget.plan.minutes}분 기도 → ${_formatAmount(widget.plan.amount)}원 적립',
           style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const Gap(16),
@@ -106,7 +114,7 @@ class HomeActivePlanCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${_dateFmt.format(plan.startDate)} ~ ${_dateFmt.format(plan.endDate)}',
+                  '${_dateFmt.format(widget.plan.startDate)} ~ ${_dateFmt.format(widget.plan.endDate)}',
                   style: const TextStyle(color: Colors.white70, fontSize: 11),
                 ),
                 Text(
@@ -136,11 +144,11 @@ class HomeActivePlanCard extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => BankPlanFormSheet(plan: plan),
+      builder: (_) => BankPlanFormSheet(plan: widget.plan),
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDelete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -156,12 +164,16 @@ class HomeActivePlanCard extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmed == true && plan.id != null) {
-      await ref.read(bankPlanProvider.notifier).remove(plan.id!);
+    if (confirmed == true && widget.plan.id != null) {
+      await ref.read(bankPlanProvider.notifier).remove(widget.plan.id!);
     }
   }
 
   Future<void> _exportExcel(BuildContext context) async {
+    // 중복 다운로드 방지
+    if (_isExporting) return;
+    setState(() => _isExporting = true);
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -178,19 +190,39 @@ class HomeActivePlanCard extends ConsumerWidget {
 
     try {
       final records = await sl<GetPrayerRecordsByDateRangeUseCase>().execute(
-        plan.startDate,
-        plan.endDate,
-        bankPlanId: plan.id,
+        widget.plan.startDate,
+        widget.plan.endDate,
+        bankPlanId: widget.plan.id,
       );
-      if (context.mounted) Navigator.of(context).pop();
-      await ExcelExportService.exportPrayerRecords(plan: plan, records: records);
+      if (context.mounted) Navigator.of(context).pop(); // 로딩 닫기
+
+      await ExcelExportService.exportPrayerRecords(plan: widget.plan, records: records);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text('엑셀 파일이 저장되었습니다.'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     } catch (e) {
       if (context.mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(); // 로딩 닫기
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('내보내기 실패: $e'), backgroundColor: Colors.red),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 }
