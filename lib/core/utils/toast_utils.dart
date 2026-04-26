@@ -9,12 +9,12 @@ void _showOverlayToast(
   Widget? leading,
 }) {
   final overlay = Overlay.of(context);
-  final topPadding = MediaQuery.of(context).padding.top;
+  final screenHeight = MediaQuery.of(context).size.height;
 
   late OverlayEntry entry;
   entry = OverlayEntry(
     builder: (_) => Positioned(
-      top: topPadding + 8,
+      top: screenHeight * 0.20,
       left: 16,
       right: 16,
       child: Material(
