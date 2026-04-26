@@ -2,20 +2,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:table_calendar/table_calendar.dart';
 
 import '../../core/di/injection_container.dart';
 import '../../core/providers/marker_color_provider.dart';
 import '../../domain/usecases/prayer_usecases.dart';
 import 'calendar/range_banner.dart';
 import 'calendar/color_palette.dart';
+import 'calendar/calendar_table.dart';
 
 /// 날짜 범위 선택 결과 타입
 typedef DateRangeResult = ({DateTime start, DateTime end});
 
 /// 기도 기록이 있는 날짜에 dot 표시를 포함한 날짜 범위 선택 다이얼로그.
-/// - 첫 탭: 시작 날짜 설정
-/// - 두 번째 탭: 종료 날짜 설정 (최대 3개월 이내)
+/// - 첫 탭: 종료 날짜 설정 (전달받은 날짜가 시작으로 하이라이트된 상태에서 시작)
+/// - 두 번째 탭: 시작 날짜 재설정
 /// - 시작 날짜만 선택 시 해당 날짜 하루 범위 반환
 /// - 기록 있는 날짜 탭 시 dot 색상 팔레트 표시
 class CalendarPickerDialog extends ConsumerStatefulWidget {
@@ -43,7 +43,8 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
   /// 종료 날짜 (null이면 시작만 선택된 상태)
   DateTime? _rangeEnd;
   /// 선택 단계: true=종료 날짜 선택 중
-  bool _pickingEnd = false;
+  /// true로 시작 → 전달받은 날짜가 하이라이트된 채로 다이얼로그 오픈
+  bool _pickingEnd = true;
 
   /// 색상 편집 중인 날짜
   DateTime? _colorEditingDate;
@@ -89,6 +90,19 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
     }
   }
 
+  void _goToToday() {
+    final today = DateTime.now();
+    final normalized = DateTime(today.year, today.month, today.day);
+    setState(() {
+      _focused = normalized;
+      _rangeStart = normalized;
+      _rangeEnd = null;
+      _pickingEnd = true;
+      _colorEditingDate = null;
+    });
+    _loadPreview(normalized);
+  }
+
   void _onDayTapped(DateTime selected, DateTime focused) {
     if (!widget.allowFuture && selected.isAfter(DateTime.now())) return;
     final normalized = DateTime(selected.year, selected.month, selected.day);
@@ -97,13 +111,13 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
       _focused = focused;
 
       if (!_pickingEnd) {
-        // 첫 탭: 시작 날짜 설정, 종료 날짜 초기화
+        // 시작 날짜 재설정, 종료 날짜 초기화
         _rangeStart = normalized;
         _rangeEnd = null;
         _pickingEnd = true;
         _colorEditingDate = null;
       } else {
-        // 두 번째 탭: 종료 날짜 설정
+        // 종료 날짜 설정
         DateTime start = _rangeStart;
         DateTime end = normalized;
 
@@ -125,9 +139,9 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
         _pickingEnd = false;
 
         // 색상 팔레트: 단일 날짜 선택 시에만 표시
-        if (isSameDay(start, end) && _hasRecord(start)) {
+        if (start == end && _hasRecord(start)) {
           _colorEditingDate =
-              _colorEditingDate != null && isSameDay(_colorEditingDate!, start)
+              _colorEditingDate != null && _colorEditingDate == start
                   ? null
                   : start;
         } else {
@@ -143,7 +157,6 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
     final colorScheme = Theme.of(context).colorScheme;
     ref.watch(markerColorProvider);
     final notifier = ref.read(markerColorProvider.notifier);
-
     final rangeEnd = _rangeEnd;
 
     return Dialog(
@@ -153,103 +166,63 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 선택 안내 텍스트
+            // 안내 텍스트 + 오늘 버튼
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
-              child: Text(
-                _pickingEnd ? '종료 날짜를 선택하세요' : '시작 날짜를 선택하세요',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            TableCalendar(
-              locale: 'ko_KR',
-              focusedDay: _focused,
-              firstDay: DateTime(2000),
-              lastDay: widget.allowFuture ? DateTime(2100) : DateTime.now(),
-              rangeStartDay: _rangeStart,
-              rangeEndDay: rangeEnd,
-              rangeSelectionMode: rangeEnd != null
-                  ? RangeSelectionMode.enforced
-                  : RangeSelectionMode.disabled,
-              selectedDayPredicate: (day) =>
-                  rangeEnd == null && isSameDay(day, _rangeStart),
-              onDaySelected: _onDayTapped,
-              onRangeSelected: null,
-              onPageChanged: (focused) {
-                setState(() {
-                  _focused = focused;
-                  _colorEditingDate = null;
-                });
-              },
-              calendarBuilders: CalendarBuilders(
-                markerBuilder: (context, day, events) {
-                  if (!_hasRecord(day)) return const SizedBox.shrink();
-                  final color = notifier.colorFor(day);
-                  final isEditing = _colorEditingDate != null &&
-                      isSameDay(_colorEditingDate!, day);
-                  return Positioned(
-                    bottom: 4,
+              child: Row(
+                children: [
+                  const Spacer(),
+                  Text(
+                    _pickingEnd ? '종료 날짜를 선택하세요' : '시작 날짜를 선택하세요',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: _goToToday,
                     child: Container(
-                      width: 6,
-                      height: 6,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        boxShadow: isEditing
-                            ? [BoxShadow(color: color, blurRadius: 4, spreadRadius: 1)]
-                            : null,
+                        color: colorScheme.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '오늘',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  );
-                },
-                // 범위 내 날짜 배경 커스텀 (rangeEnd가 null일 때 기본 highlight 방지)
-                withinRangeBuilder: rangeEnd != null
-                    ? null
-                    : (context, day, _) => _buildDay(context, day, colorScheme, inRange: false),
-              ),
-              headerStyle: HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
-                titleTextStyle: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              calendarStyle: CalendarStyle(
-                rangeHighlightColor: colorScheme.primary.withValues(alpha: 0.15),
-                rangeStartDecoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                rangeEndDecoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                selectedDecoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                todayDecoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.3),
-                  shape: BoxShape.circle,
-                ),
-                outsideDaysVisible: false,
+                  ),
+                ],
               ),
             ),
+            CalendarTable(
+              focusedDay: _focused,
+              rangeStart: _rangeStart,
+              rangeEnd: rangeEnd,
+              allowFuture: widget.allowFuture,
+              colorEditingDate: _colorEditingDate,
+              markerNotifier: notifier,
+              hasRecord: _hasRecord,
+              onDaySelected: _onDayTapped,
+              onPageChanged: (focused) => setState(() {
+                _focused = focused;
+                _colorEditingDate = null;
+              }),
+            ),
             const Divider(height: 16),
-
             RangeBanner(
               start: _rangeStart,
               end: rangeEnd,
               previewTitle: _previewTitle,
               isLoading: _previewLoading,
             ),
-
             // 색상 팔레트: 단일 날짜 선택 시에만 표시
             AnimatedSize(
               duration: const Duration(milliseconds: 200),
@@ -267,7 +240,6 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
                     )
                   : const SizedBox.shrink(),
             ),
-
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -289,22 +261,6 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDay(
-    BuildContext context,
-    DateTime day,
-    ColorScheme colorScheme, {
-    required bool inRange,
-  }) {
-    return Center(
-      child: Text(
-        '${day.day}',
-        style: TextStyle(
-          color: inRange ? colorScheme.primary : colorScheme.onSurface,
         ),
       ),
     );

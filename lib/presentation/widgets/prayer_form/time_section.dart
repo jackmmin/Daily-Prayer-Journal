@@ -42,6 +42,11 @@ class PrayerTimeSection extends StatefulWidget {
 
 class _PrayerTimeSectionState extends State<PrayerTimeSection> {
   void _switchToManual(WidgetRef ref) {
+    // 타이머 진행 중이면 탭 전환 시 자동 멈춤
+    if (widget.state.isTimerRunning) {
+      widget.vm.stopTimer();
+    }
+
     if (widget.useTimer && !widget.manualTimeEdited) {
       final timerState = ref.read(prayerFormViewModelProvider(widget.editingRecord));
       if (timerState.timerStartTime != null) {
@@ -71,6 +76,12 @@ class _PrayerTimeSectionState extends State<PrayerTimeSection> {
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         trailing: _buildTimeSummary(context),
+        // 타이머 진행 중 섹션이 접히면 자동 멈춤
+        onExpansionChanged: (expanded) {
+          if (!expanded && widget.useTimer && widget.state.isTimerRunning) {
+            widget.vm.stopTimer();
+          }
+        },
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
