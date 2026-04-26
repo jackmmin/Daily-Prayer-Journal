@@ -167,7 +167,8 @@ class PrayerFormViewModel extends StateNotifier<PrayerFormState> {
   }
 }
 
-final prayerFormViewModelProvider = StateNotifierProvider.family<
+// autoDispose: 화면 닫힐 때 상태 초기화 → 재진입 시 isSaved가 true로 남아 저장 불가 문제 방지
+final prayerFormViewModelProvider = StateNotifierProvider.autoDispose.family<
     PrayerFormViewModel, PrayerFormState, PrayerRecord?>(
   (ref, initialRecord) => PrayerFormViewModel(
     saveUseCase: sl<SavePrayerRecordUseCase>(),
