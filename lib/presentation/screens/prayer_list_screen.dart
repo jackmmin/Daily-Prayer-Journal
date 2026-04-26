@@ -80,15 +80,6 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
                     state.selectedIds.length == state.records.length ? '전체 해제' : '전체 선택',
                   ),
                 ),
-                // 선택 삭제 버튼
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  color: Colors.red.shade400,
-                  tooltip: '선택 삭제',
-                  onPressed: state.selectedIds.isEmpty
-                      ? null
-                      : () => _confirmDeleteSelected(context, vm),
-                ),
               ],
             )
           : AppBar(
