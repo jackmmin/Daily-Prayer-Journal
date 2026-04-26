@@ -8,7 +8,7 @@ import '../../core/utils/toast_utils.dart';
 import '../../domain/entities/bank_plan.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_list_viewmodel.dart';
-import '../widgets/calendar_picker_dialog.dart' show CalendarPickerDialog, DateRangeResult;
+import '../widgets/color_range_dialog.dart';
 import '../widgets/prayer_record_card.dart';
 import '../widgets/date_range_selector_bar.dart';
 import '../widgets/prayer_bank_banner.dart';
@@ -221,25 +221,36 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     );
   }
 
-  /// 현재 조회 범위를 초기 선택값으로 캘린더 색상 지정 다이얼로그 열기
+  /// 현재 조회 범위의 색상 일괄 지정 다이얼로그 열기 (달력 없이 팔레트만 표시)
   Future<void> _openColorCalendar(
     BuildContext context,
     PrayerListState state,
   ) async {
-    final picked = await showDialog<DateRangeResult>(
+    // 조회 범위 내 기록 있는 날짜만 추출 (정렬)
+    final start = state.startDate;
+    final end = state.endDate;
+    final dates = state.recordDates
+        .where((d) => !d.isBefore(start) && !d.isAfter(end))
+        .toList()
+      ..sort();
+
+    if (dates.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('조회 범위에 기도 기록이 없습니다.')),
+        );
+      }
+      return;
+    }
+
+    await showDialog<void>(
       context: context,
-      builder: (_) => CalendarPickerDialog(
-        selectedDate: state.startDate,
-        selectedEndDate: state.endDate,
-        recordDates: state.recordDates,
-        allowFuture: true,
-        colorPickerMode: true,
+      builder: (_) => ColorRangeDialog(
+        recordDates: dates,
+        rangeStart: start,
+        rangeEnd: end,
       ),
     );
-    if (picked != null && context.mounted) {
-      await ref.read(prayerListViewModelProvider(_bankPlanId).notifier)
-          .changeRange(picked.start, picked.end);
-    }
   }
 
   void _showSortSheet(
