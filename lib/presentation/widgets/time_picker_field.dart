@@ -51,6 +51,8 @@ class TimePickerField extends StatelessWidget {
   }
 
   Future<void> _pickDateTime(BuildContext context) async {
+    // 바텀시트 오픈 전 포커스 해제 — 시트가 닫힐 때 textInputAction.next 트리거 방지
+    FocusScope.of(context).unfocus();
     final base = time ?? DateTime.now();
     final result = await showModalBottomSheet<DateTime>(
       context: context,
