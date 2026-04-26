@@ -67,7 +67,7 @@ class _PrayerTimeSectionState extends State<PrayerTimeSection> {
   Widget build(BuildContext context) {
     return Card(
       child: ExpansionTile(
-        initiallyExpanded: false,
+        initiallyExpanded: true,
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         leading: Icon(Icons.access_time, color: Theme.of(context).colorScheme.primary),

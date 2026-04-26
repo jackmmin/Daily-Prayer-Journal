@@ -1,11 +1,27 @@
-# 기도통장 (Prayer Journal)
+# 기도통장 (Daily Prayer)
 
 하루의 기도를 기록하는 Flutter 앱입니다.
 
 ## UPDATE_HISTORY
 [![Static Badge](https://img.shields.io/badge/UPDATE_HISTORY-Link-blue)](UPDATE_HISTORY.md)
 
-## 시작하기
+---
+
+<span style="color:red">※ 주의 ※</span>
+앱이 삭제되면 모든 데이터가 삭제됩니다.
+
+### 기능
+- 기도통장 계획 생성
+- 기도 일지 생성
+- 기도 시간 직접 입력
+- 기도 시간 타이머
+- 기도 일지 범위 날짜 조회
+- 기도 일지 다중 삭제
+- 기도통장 계획 엑셀 다운로드
+
+---
+
+### 시작하기
 
 ```bash
 # 의존성 설치
@@ -13,16 +29,4 @@ flutter pub get
 
 # 앱 실행
 flutter run
-
-# 앱 업데이트 시 앱 삭제하지 않고 apk 실행으로 업데이트( 앱 삭제 시 기존 데이터 삭제 )
 ```
-
-## 주요 패키지
-
-| 패키지 | 버전 | 용도 |
-|--------|------|------|
-| sqflite | ^2.3.2 | SQLite 로컬 저장 |
-| flutter_riverpod | ^2.5.1 | 상태관리 |
-| get_it | ^7.7.0 | 의존성 주입 |
-| intl | ^0.19.0 | 날짜/시간 포맷 |
-| gap | ^3.0.1 | 간격 위젯 |

@@ -221,6 +221,19 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
   void _save(PrayerFormViewModel vm) {
     if (_formKey.currentState?.validate() != true) return;
 
+    // 타이머 탭 선택 시 기록된 시간이 없으면 저장 불가
+    final state = ref.read(prayerFormViewModelProvider(widget.editingRecord));
+    if (_useTimer && !state.isTimerStopped) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('타이머 기록이 없습니다.'),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     // 미래 시간으로 저장 불가 검증
     final now = DateTime.now();
     if (_startTime.isAfter(now)) {
