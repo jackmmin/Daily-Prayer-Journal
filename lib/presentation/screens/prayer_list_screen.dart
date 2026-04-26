@@ -251,7 +251,7 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       ),
     );
     if (saved == true && context.mounted) {
-      showInfoToast(context, '저장되었습니다.');
+      showSuccessToast(context, '수정되었습니다.');
     }
     ref.read(prayerListViewModelProvider(_bankPlanId).notifier).loadRecords();
     ref.invalidate(planSavingsProvider);

@@ -32,10 +32,10 @@ void _showOverlayToast(
                   children: [
                     leading,
                     const SizedBox(width: 8),
-                    Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
+                    Expanded(child: Text(message, style: const TextStyle(color: Color(0xFF333333)))),
                   ],
                 )
-              : Text(message, style: const TextStyle(color: Colors.white)),
+              : Text(message, style: const TextStyle(color: Color(0xFF333333))),
         ),
       ),
     ),
@@ -47,20 +47,36 @@ void _showOverlayToast(
   });
 }
 
-/// 성공 토스트 (상단)
+/// 성공 토스트 - 연한 초록색 배경
 void showSuccessToast(BuildContext context, String message, {Duration duration = const Duration(seconds: 2)}) {
   _showOverlayToast(
     context,
     message,
-    backgroundColor: Colors.green,
+    backgroundColor: const Color(0xFFD4EDDA),
     duration: duration,
-    leading: const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+    leading: const Icon(Icons.check_circle_outline, color: Color(0xFF28A745), size: 18),
   );
 }
 
-/// 오류 토스트 (상단)
+/// 오류 토스트 - 연한 빨간색 배경
 void showErrorToast(BuildContext context, String message) {
-  _showOverlayToast(context, message, backgroundColor: Colors.red);
+  _showOverlayToast(
+    context,
+    message,
+    backgroundColor: const Color(0xFFF8D7DA),
+    leading: const Icon(Icons.error_outline, color: Color(0xFFDC3545), size: 18),
+  );
+}
+
+/// 경고 토스트 - 노란색 배경
+void showWarningToast(BuildContext context, String message, {Duration duration = const Duration(seconds: 2)}) {
+  _showOverlayToast(
+    context,
+    message,
+    backgroundColor: const Color(0xFFFFF3CD),
+    duration: duration,
+    leading: const Icon(Icons.warning_amber_outlined, color: Color(0xFFFFC107), size: 18),
+  );
 }
 
 /// 일반 정보 토스트 (상단)
