@@ -76,8 +76,9 @@ class _PrayerTimeSectionState extends State<PrayerTimeSection> {
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         trailing: _buildTimeSummary(context),
-        // 타이머 진행 중 섹션이 접히면 자동 멈춤
+        // 섹션 터치 시 포커스 해제 + 타이머 진행 중 섹션이 접히면 자동 멈춤
         onExpansionChanged: (expanded) {
+          FocusScope.of(context).unfocus();
           if (!expanded && widget.useTimer && widget.state.isTimerRunning) {
             widget.vm.stopTimer();
           }
@@ -220,7 +221,10 @@ class _ModeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        onTap();
+      },
       borderRadius: BorderRadius.circular(8),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

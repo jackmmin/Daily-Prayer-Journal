@@ -107,8 +107,9 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
         ],
       ),
       body: GestureDetector(
-        // input 영역 외 터치 시 키보드 숨기기
+        // input 영역 외 터치 시 키보드 숨기기 (opaque: 빈 영역 터치도 감지)
         onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Form(
