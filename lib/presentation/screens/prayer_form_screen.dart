@@ -87,7 +87,12 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
         title: Text(widget.editingRecord == null ? '기도 기록 추가' : '기도 기록 수정'),
         actions: [
           TextButton(
-            onPressed: state.isSaving ? null : () => _save(vm),
+            onPressed: state.isSaving
+                ? null
+                : () {
+                    FocusScope.of(context).unfocus();
+                    _save(vm);
+                  },
             child: state.isSaving
                 ? const SizedBox(
                     width: 20,
