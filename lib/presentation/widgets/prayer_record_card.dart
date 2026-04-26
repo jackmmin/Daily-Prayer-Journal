@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 
+import '../../domain/entities/bank_plan.dart';
 import '../../domain/entities/prayer_record.dart';
 
 class PrayerRecordCard extends StatelessWidget {
@@ -14,8 +15,10 @@ class PrayerRecordCard extends StatelessWidget {
   final bool isSelectMode;
   /// 현재 카드가 선택된 상태인지
   final bool isSelected;
-  /// 꾹 눌렀을 때 콜백 (선택 모드 시작)
+  /// 꾹 눌렀을 때 콜백 (삭제 확인)
   final VoidCallback? onLongPress;
+  /// 연결된 기도통장 계획 (적립금 계산용)
+  final BankPlan? bankPlan;
 
   const PrayerRecordCard({
     super.key,
@@ -25,6 +28,7 @@ class PrayerRecordCard extends StatelessWidget {
     this.isSelectMode = false,
     this.isSelected = false,
     this.onLongPress,
+    this.bankPlan,
   });
 
   static final _dateTimeFormat = DateFormat('M월d일 HH:mm');
@@ -109,6 +113,7 @@ class PrayerRecordCard extends StatelessWidget {
 
   Widget _buildTimeRow(BuildContext context) {
     final duration = record.prayerDuration;
+    final earned = _calcEarned(duration);
 
     return Row(
       children: [
@@ -134,7 +139,9 @@ class PrayerRecordCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              _formatDuration(duration),
+              earned != null
+                  ? '${duration.inMinutes}분 · ${_formatAmount(earned)}원'
+                  : '${duration.inMinutes}분',
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.primary,
@@ -146,5 +153,13 @@ class PrayerRecordCard extends StatelessWidget {
     );
   }
 
-  String _formatDuration(Duration duration) => '${duration.inMinutes}분';
+  /// 해당 기도 기록의 적립금 계산. bankPlan이 없으면 null 반환.
+  int? _calcEarned(Duration? duration) {
+    if (bankPlan == null || duration == null || duration.isNegative) return null;
+    return bankPlan!.calcEarned(duration.inSeconds);
+  }
+
+  static String _formatAmount(int amount) => amount
+      .toString()
+      .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
 }

@@ -79,6 +79,8 @@ class _BannerActivePlan extends ConsumerWidget {
                 style: const TextStyle(color: Colors.white70, fontSize: 11),
               ),
               const SizedBox(height: 2),
+              const Text('누적 적립금', style: TextStyle(color: Colors.white60, fontSize: 11)),
+              const SizedBox(height: 2),
               savingsAsync.when(
                 data: (amount) => Text(
                   '${_formatAmount(amount)}원',
@@ -108,7 +110,7 @@ class _BannerActivePlan extends ConsumerWidget {
             const SizedBox(height: 4),
             totalMinutesAsync.when(
               data: (mins) => Text(
-                '총 ${mins}분',
+                '누적 기도시간 $mins분',
                 style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
               ),
               loading: () => const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
