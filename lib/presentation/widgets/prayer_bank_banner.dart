@@ -75,7 +75,7 @@ class _BannerActivePlan extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '기도통장 (${_dateFmt.format(plan.startDate)} ~ ${_dateFmt.format(plan.endDate)})',
+                '${_dateFmt.format(plan.startDate)} ~ ${_dateFmt.format(plan.endDate)}',
                 style: const TextStyle(color: Colors.white70, fontSize: 11),
               ),
               const SizedBox(height: 2),

@@ -19,6 +19,7 @@ class PlanInfoHeader extends StatelessWidget {
       color: colorScheme.primaryContainer,
       child: Text(
         plan.title.isNotEmpty ? plan.title : '기도통장 계획',
+        textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.bold,
