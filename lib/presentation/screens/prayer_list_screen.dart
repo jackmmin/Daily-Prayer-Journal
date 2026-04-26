@@ -8,6 +8,7 @@ import '../../core/utils/toast_utils.dart';
 import '../../domain/entities/bank_plan.dart';
 import '../../domain/entities/prayer_record.dart';
 import '../viewmodels/prayer_list_viewmodel.dart';
+import '../widgets/calendar_picker_dialog.dart' show CalendarPickerDialog, DateRangeResult;
 import '../widgets/prayer_record_card.dart';
 import '../widgets/date_range_selector_bar.dart';
 import '../widgets/prayer_bank_banner.dart';
@@ -115,6 +116,7 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
             selectedCount: state.selectedIds.length,
             onFilter: () => _showSortSheet(context, state, vm),
             onDeleteSelected: () => _confirmDeleteSelected(context, vm),
+            onColorPicker: () => _openColorCalendar(context, state),
           ),
           Expanded(child: _buildBody(context, state, vm, canAddRecord)),
         ],
@@ -217,6 +219,27 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
         },
       ),
     );
+  }
+
+  /// 현재 조회 범위를 초기 선택값으로 캘린더 색상 지정 다이얼로그 열기
+  Future<void> _openColorCalendar(
+    BuildContext context,
+    PrayerListState state,
+  ) async {
+    final picked = await showDialog<DateRangeResult>(
+      context: context,
+      builder: (_) => CalendarPickerDialog(
+        selectedDate: state.startDate,
+        selectedEndDate: state.endDate,
+        recordDates: state.recordDates,
+        allowFuture: true,
+        colorPickerMode: true,
+      ),
+    );
+    if (picked != null && context.mounted) {
+      await ref.read(prayerListViewModelProvider(_bankPlanId).notifier)
+          .changeRange(picked.start, picked.end);
+    }
   }
 
   void _showSortSheet(
@@ -324,6 +347,7 @@ class _DateRangeSummaryBar extends StatelessWidget {
   final int selectedCount;
   final VoidCallback onFilter;
   final VoidCallback onDeleteSelected;
+  final VoidCallback onColorPicker;
 
   const _DateRangeSummaryBar({
     required this.records,
@@ -332,6 +356,7 @@ class _DateRangeSummaryBar extends StatelessWidget {
     required this.selectedCount,
     required this.onFilter,
     required this.onDeleteSelected,
+    required this.onColorPicker,
   });
 
   @override
@@ -376,6 +401,17 @@ class _DateRangeSummaryBar extends StatelessWidget {
             ),
           ],
           const Spacer(),
+          // 색상 지정 버튼 (선택 모드가 아닐 때만 표시)
+          if (!isSelectMode)
+            IconButton(
+              icon: const Icon(Icons.palette_outlined),
+              tooltip: '날짜 색상 지정',
+              iconSize: 22,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: onColorPicker,
+            ),
+          const SizedBox(width: 8),
           // 롱프레스 선택 모드 → 삭제 버튼, 일반 모드 → 필터 버튼
           if (isSelectMode)
             IconButton(

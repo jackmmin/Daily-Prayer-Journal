@@ -25,6 +25,8 @@ class CalendarPickerDialog extends ConsumerStatefulWidget {
   final Set<DateTime> recordDates;
   /// true이면 오늘 이후 미래 날짜도 선택 가능
   final bool allowFuture;
+  /// true이면 색상 지정 전용 모드: 범위 내 날짜를 순차 색상 편집
+  final bool colorPickerMode;
 
   const CalendarPickerDialog({
     super.key,
@@ -32,6 +34,7 @@ class CalendarPickerDialog extends ConsumerStatefulWidget {
     this.selectedEndDate,
     required this.recordDates,
     this.allowFuture = false,
+    this.colorPickerMode = false,
   });
 
   @override
@@ -147,18 +150,75 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
         _rangeEnd = end;
         _pickingEnd = false;
 
-        // 색상 팔레트: 단일 날짜 선택 시에만 표시
+        // 색상 팔레트: 단일 날짜이거나 colorPickerMode면 표시
         if (start == end && _hasRecord(start)) {
           _colorEditingDate =
               _colorEditingDate != null && _colorEditingDate == start
                   ? null
                   : start;
+        } else if (widget.colorPickerMode) {
+          // 범위 선택 시 색상 팔레트는 _buildColorPaletteSection에서 범위 내 날짜 전체 표시
+          _colorEditingDate = null;
         } else {
           _colorEditingDate = null;
         }
       }
     });
     _loadPreview(normalized);
+  }
+
+  /// 범위 내 기록 있는 날짜 목록 (정렬된)
+  List<DateTime> _recordDatesInRange() {
+    final start = _rangeStart;
+    final end = _rangeEnd ?? _rangeStart;
+    return widget.recordDates
+        .where((d) => !d.isBefore(start) && !d.isAfter(end))
+        .toList()
+      ..sort();
+  }
+
+  /// 색상 팔레트 섹션 빌드:
+  /// - colorPickerMode + 범위 설정: 범위 내 기록 날짜 각각 팔레트 표시
+  /// - 일반 모드: 단일 날짜 선택 시 팔레트 표시
+  Widget _buildColorPaletteSection(MarkerColorNotifier notifier) {
+    if (widget.colorPickerMode && _rangeEnd != null) {
+      // 범위 내 기록 있는 날짜들 색상 편집
+      final dates = _recordDatesInRange();
+      if (dates.isEmpty) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: dates.map((date) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ColorPalette(
+              editingDate: date,
+              currentColor: notifier.colorFor(date),
+              onColorSelected: (color) async {
+                await notifier.setColor(date, color);
+                setState(() {});
+              },
+            ),
+          )).toList(),
+        ),
+      );
+    }
+
+    // 일반 모드: 단일 날짜 선택 시에만 팔레트
+    if (_colorEditingDate != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: ColorPalette(
+          editingDate: _colorEditingDate!,
+          currentColor: notifier.colorFor(_colorEditingDate!),
+          onColorSelected: (color) async {
+            await notifier.setColor(_colorEditingDate!, color);
+            setState(() {});
+          },
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   @override
@@ -232,22 +292,10 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
               previewTitle: _previewTitle,
               isLoading: _previewLoading,
             ),
-            // 색상 팔레트: 단일 날짜 선택 시에만 표시
+            // 색상 팔레트 영역
             AnimatedSize(
               duration: const Duration(milliseconds: 200),
-              child: _colorEditingDate != null
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: ColorPalette(
-                        editingDate: _colorEditingDate!,
-                        currentColor: notifier.colorFor(_colorEditingDate!),
-                        onColorSelected: (color) async {
-                          await notifier.setColor(_colorEditingDate!, color);
-                          setState(() {});
-                        },
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+              child: _buildColorPaletteSection(notifier),
             ),
             const SizedBox(height: 4),
             Row(
