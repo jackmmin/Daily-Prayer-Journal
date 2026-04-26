@@ -36,7 +36,7 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
     _endDate = p?.endDate ?? DateTime(today.year, today.month + 1, today.day);
     _titleCtrl = TextEditingController(text: p?.title ?? '');
     _minutesCtrl = TextEditingController(text: (p?.minutes ?? 1).toString());
-    _amountCtrl = TextEditingController(text: (p?.amount ?? 100).toString());
+    _amountCtrl = TextEditingController(text: (p?.amount ?? 10000).toString());
   }
 
   @override
