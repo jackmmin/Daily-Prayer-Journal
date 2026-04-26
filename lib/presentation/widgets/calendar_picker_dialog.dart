@@ -20,6 +20,8 @@ typedef DateRangeResult = ({DateTime start, DateTime end});
 /// - 기록 있는 날짜 탭 시 dot 색상 팔레트 표시
 class CalendarPickerDialog extends ConsumerStatefulWidget {
   final DateTime selectedDate;
+  /// null이면 단일 날짜 선택 상태로 시작
+  final DateTime? selectedEndDate;
   final Set<DateTime> recordDates;
   /// true이면 오늘 이후 미래 날짜도 선택 가능
   final bool allowFuture;
@@ -27,6 +29,7 @@ class CalendarPickerDialog extends ConsumerStatefulWidget {
   const CalendarPickerDialog({
     super.key,
     required this.selectedDate,
+    this.selectedEndDate,
     required this.recordDates,
     this.allowFuture = false,
   });
@@ -43,7 +46,7 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
   /// 종료 날짜 (null이면 시작만 선택된 상태)
   DateTime? _rangeEnd;
   /// 선택 단계: true=종료 날짜 선택 중
-  /// true로 시작 → 전달받은 날짜가 하이라이트된 채로 다이얼로그 오픈
+  /// 범위가 이미 설정된 경우 false로 시작 → 시작 날짜 재선택 단계
   bool _pickingEnd = true;
 
   /// 색상 편집 중인 날짜
@@ -61,6 +64,12 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
     super.initState();
     _focused = widget.selectedDate;
     _rangeStart = widget.selectedDate;
+    // 이전에 설정된 범위가 있으면 복원하고 시작 날짜 재선택 단계로 시작
+    if (widget.selectedEndDate != null &&
+        !widget.selectedEndDate!.isAtSameMomentAs(widget.selectedDate)) {
+      _rangeEnd = widget.selectedEndDate;
+      _pickingEnd = false;
+    }
     _loadPreview(widget.selectedDate);
   }
 

@@ -28,6 +28,7 @@ class PrayerListBottomActionBar extends StatelessWidget {
       context: context,
       builder: (_) => CalendarPickerDialog(
         selectedDate: startDate,
+        selectedEndDate: endDate,
         recordDates: recordDates,
         allowFuture: true,
       ),
