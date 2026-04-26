@@ -10,13 +10,15 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    val javaVersion = JavaVersion.VERSION_17
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = javaVersion.toString()
     }
 
     defaultConfig {
@@ -52,7 +54,7 @@ android {
         variant.outputs
             .mapNotNull { it as? com.android.build.gradle.internal.api.BaseVariantOutputImpl }
             .forEach { output ->
-                val abiFilter = output.getFilter(com.android.build.api.variant.FilterConfiguration.FilterType.ABI)
+                val abiFilter = output.getFilter("ABI")
                 val abiSuffix = if (abiFilter != null) "-$abiFilter" else "-universal"
                 output.outputFileName =
                     "Daily_Prayer-${variant.versionName}$abiSuffix-${variant.buildType.name}.apk"
