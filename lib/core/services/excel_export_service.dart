@@ -95,6 +95,7 @@ class ExcelExportService {
   static void _writePlanSummary(Excel excel, BankPlan plan, List<PrayerRecord> records) {
     final sheet = excel['계획 요약'];
     final labelStyle = CellStyle(bold: true);
+    final metaStyle = CellStyle(bold: true, fontColorHex: ExcelColor.fromHexString('#888888'));
 
     final totalMinutes = records.fold<int>(
       0,
@@ -108,7 +109,8 @@ class ExcelExportService {
       },
     );
 
-    final rows = [
+    // 사람이 읽기 좋은 요약 행
+    final summaryRows = [
       ['계획명', plan.title.isNotEmpty ? plan.title : '(이름 없음)'],
       ['시작일', _dateFmt.format(plan.startDate)],
       ['종료일', _dateFmt.format(plan.endDate)],
@@ -118,15 +120,40 @@ class ExcelExportService {
       ['총 적립 금액', '${_formatAmount(totalEarned)}원'],
     ];
 
-    for (var i = 0; i < rows.length; i++) {
+    for (var i = 0; i < summaryRows.length; i++) {
       final labelCell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: i));
-      labelCell.value = TextCellValue(rows[i][0]);
+      labelCell.value = TextCellValue(summaryRows[i][0]);
       labelCell.cellStyle = labelStyle;
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: i)).value =
-          TextCellValue(rows[i][1]);
+          TextCellValue(summaryRows[i][1]);
     }
 
-    sheet.setColumnWidth(0, 20);
+    // 가져오기 호환용 raw 메타데이터 블록 (사람이 읽기 위한 구분선 포함)
+    final metaStartRow = summaryRows.length + 2;
+    final metaHeaderCell = sheet.cell(
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: metaStartRow - 1),
+    );
+    metaHeaderCell.value = TextCellValue('[가져오기 메타데이터 - 수정하지 마세요]');
+    metaHeaderCell.cellStyle = metaStyle;
+
+    // 가져오기 시 파싱할 수 있는 raw 값 (plan.id는 가져오기 시 새로 부여되므로 제외)
+    final metaRows = [
+      ['meta_title', plan.title],
+      ['meta_start_date', _dateFmt.format(plan.startDate)],        // yyyy-MM-dd
+      ['meta_end_date', _dateFmt.format(plan.endDate)],            // yyyy-MM-dd
+      ['meta_minutes', plan.minutes.toString()],                   // 기준 기도 시간(분)
+      ['meta_amount', plan.amount.toString()],                     // 기준 적립 금액(원)
+    ];
+
+    for (var i = 0; i < metaRows.length; i++) {
+      final rowIndex = metaStartRow + i;
+      final keyCell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex));
+      keyCell.value = TextCellValue(metaRows[i][0]);
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex)).value =
+          TextCellValue(metaRows[i][1]);
+    }
+
+    sheet.setColumnWidth(0, 30);
     sheet.setColumnWidth(1, 30);
   }
 

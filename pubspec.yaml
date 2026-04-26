@@ -29,10 +29,11 @@ dependencies:
   shared_preferences: ^2.3.2
   characters: ^1.3.0
 
-  # Excel export & file sharing
+  # Excel export & file sharing & import
   excel: ^4.0.6
   share_plus: ^10.0.3
   path_provider: ^2.1.5
+  file_picker: ^8.1.7
 
 
 dev_dependencies:

@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
 import '../../core/providers/bank_plan_provider.dart';
+import '../../core/services/excel_import_service.dart';
+import '../../core/utils/toast_utils.dart';
 import '../../domain/entities/bank_plan.dart';
 import '../widgets/bank_plan_card.dart';
 import '../widgets/bank_plan_form_sheet.dart';
+import '../widgets/bank_plan/import_bottom_sheet.dart';
 import 'prayer_list_screen.dart';
 
 class BankPlanScreen extends ConsumerWidget {
@@ -23,6 +26,11 @@ class BankPlanScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('기도통장 계획'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file_outlined),
+            tooltip: '계획 가져오기',
+            onPressed: () => _showImportDialog(context, ref),
+          ),
           PopupMenuButton<BankPlanSortOrder>(
             icon: const Icon(Icons.sort),
             tooltip: '정렬',
@@ -115,4 +123,115 @@ class BankPlanScreen extends ConsumerWidget {
       builder: (_) => BankPlanFormSheet(plan: plan),
     );
   }
+
+  /// 가져오기 선택 다이얼로그 표시
+  void _showImportDialog(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => ImportBottomSheet(
+        onImport: () async {
+          Navigator.pop(ctx);
+          await _importFromFile(context, ref);
+        },
+        onSample: () async {
+          Navigator.pop(ctx);
+          await _downloadSample(context);
+        },
+      ),
+    );
+  }
+
+  /// 기기 파일에서 계획 가져오기
+  Future<void> _importFromFile(BuildContext context, WidgetRef ref) async {
+    // 로딩 다이얼로그
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('파일 읽는 중...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final result = await ExcelImportService.pickAndParse();
+      if (context.mounted) Navigator.of(context).pop(); // 로딩 닫기
+
+      if (!result.isSuccess) {
+        if (context.mounted) showErrorToast(context, result.errorMessage!);
+        return;
+      }
+
+      if (context.mounted) {
+        await _showImportConfirm(context, ref, result.plan!);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        showErrorToast(context, '가져오기 실패: $e');
+      }
+    }
+  }
+
+  /// 파싱된 계획 확인 후 저장 다이얼로그
+  Future<void> _showImportConfirm(BuildContext context, WidgetRef ref, BankPlan plan) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => ImportConfirmDialog(plan: plan),
+    );
+
+    if (confirmed != true) return;
+
+    // 중복 이름 검사
+    final plans = ref.read(bankPlanProvider).valueOrNull ?? [];
+    final isDuplicate = plans.any((p) => p.title == plan.title);
+    if (isDuplicate && context.mounted) {
+      showErrorToast(context, '이미 같은 이름의 계획이 있습니다.');
+      return;
+    }
+
+    await ref.read(bankPlanProvider.notifier).add(plan);
+    if (context.mounted) {
+      showSuccessToast(context, '계획을 가져왔습니다.', duration: const Duration(seconds: 3));
+    }
+  }
+
+  /// 샘플 엑셀 파일 다운로드
+  Future<void> _downloadSample(BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('샘플 파일 생성 중...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await ExcelImportService.exportSample();
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        showSuccessToast(context, '샘플 파일을 저장하세요.', duration: const Duration(seconds: 3));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        showErrorToast(context, '샘플 파일 생성 실패: $e');
+      }
+    }
+  }
 }
+
