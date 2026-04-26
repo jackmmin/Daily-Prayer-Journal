@@ -27,7 +27,7 @@ class PrayerRecordCard extends StatelessWidget {
     this.onLongPress,
   });
 
-  static final _timeFormat = DateFormat('HH:mm');
+  static final _dateTimeFormat = DateFormat('M월d일 HH:mm');
 
   @override
   Widget build(BuildContext context) {
@@ -115,13 +115,13 @@ class PrayerRecordCard extends StatelessWidget {
         const Icon(Icons.access_time, size: 14, color: Colors.grey),
         const Gap(4),
         Text(
-          _timeFormat.format(record.startTime),
+          _dateTimeFormat.format(record.startTime),
           style: const TextStyle(fontSize: 13, color: Colors.grey),
         ),
         if (record.endTime != null) ...[
           const Text(' → ', style: TextStyle(color: Colors.grey)),
           Text(
-            _timeFormat.format(record.endTime!),
+            _dateTimeFormat.format(record.endTime!),
             style: const TextStyle(fontSize: 13, color: Colors.grey),
           ),
         ],
