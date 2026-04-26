@@ -118,9 +118,18 @@ class BankPlanNotifier extends StateNotifier<AsyncValue<List<BankPlan>>> {
     await load();
   }
 
-  Future<void> remove(int id) async {
-    await _repo.delete(id);
-    await load();
+  bool _isDeleting = false;
+
+  Future<bool> remove(int id) async {
+    if (_isDeleting) return false;
+    _isDeleting = true;
+    try {
+      await _repo.delete(id);
+      await load();
+      return true;
+    } finally {
+      _isDeleting = false;
+    }
   }
 }
 

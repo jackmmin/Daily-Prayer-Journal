@@ -58,6 +58,25 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
       orElse: () => false,
     );
 
+    // 삭제 완료 시 토스트 표시
+    ref.listen(prayerListViewModelProvider(_bankPlanId), (previous, next) {
+      if (!context.mounted) return;
+      if (previous?.isDeleted == false && next.isDeleted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('삭제되었습니다.'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      if (previous?.errorMessage == null && next.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.errorMessage!), backgroundColor: Colors.red),
+        );
+      }
+    });
+
     return PopScope(
       // 선택 모드일 때 뒤로가기는 선택 모드 해제로 처리
       canPop: !state.isSelectMode,

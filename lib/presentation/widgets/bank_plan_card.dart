@@ -169,7 +169,16 @@ class BankPlanCard extends ConsumerWidget {
       ),
     );
     if (confirmed == true && plan.id != null) {
-      await ref.read(bankPlanProvider.notifier).remove(plan.id!);
+      final deleted = await ref.read(bankPlanProvider.notifier).remove(plan.id!);
+      if (deleted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('삭제되었습니다.'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 

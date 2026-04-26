@@ -67,6 +67,10 @@ class PrayerListState {
   final bool isSelectMode;
   /// 선택된 기록 ID 집합
   final Set<int> selectedIds;
+  /// 삭제 진행 중 여부 (중복 삭제 방지)
+  final bool isDeleting;
+  /// 삭제 완료 여부 (토스트 트리거)
+  final bool isDeleted;
 
   const PrayerListState({
     this.records = const [],
@@ -79,6 +83,8 @@ class PrayerListState {
     this.sortOrder = PrayerSortOrder.timeDesc,
     this.isSelectMode = false,
     this.selectedIds = const {},
+    this.isDeleting = false,
+    this.isDeleted = false,
   });
 
   PrayerListState copyWith({
@@ -93,6 +99,8 @@ class PrayerListState {
     PrayerSortOrder? sortOrder,
     bool? isSelectMode,
     Set<int>? selectedIds,
+    bool? isDeleting,
+    bool? isDeleted,
   }) {
     return PrayerListState(
       records: records ?? this.records,
@@ -105,6 +113,8 @@ class PrayerListState {
       sortOrder: sortOrder ?? this.sortOrder,
       isSelectMode: isSelectMode ?? this.isSelectMode,
       selectedIds: selectedIds ?? this.selectedIds,
+      isDeleting: isDeleting ?? this.isDeleting,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 }
@@ -168,11 +178,14 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
   }
 
   Future<void> deleteRecord(int id) async {
+    if (state.isDeleting) return;
+    state = state.copyWith(isDeleting: true, isDeleted: false);
     try {
       await _deleteUseCase.execute(id);
+      state = state.copyWith(isDeleting: false, isDeleted: true);
       await loadRecords();
     } catch (e) {
-      state = state.copyWith(errorMessage: '삭제에 실패했습니다.');
+      state = state.copyWith(isDeleting: false, errorMessage: '삭제에 실패했습니다.');
     }
   }
 
@@ -211,12 +224,14 @@ class PrayerListViewModel extends StateNotifier<PrayerListState> {
 
   /// 선택된 항목 일괄 삭제
   Future<void> deleteSelected() async {
+    if (state.isDeleting) return;
+    state = state.copyWith(isDeleting: true, isDeleted: false);
     try {
       await Future.wait(state.selectedIds.map((id) => _deleteUseCase.execute(id)));
-      state = state.copyWith(isSelectMode: false, selectedIds: {});
+      state = state.copyWith(isDeleting: false, isDeleted: true, isSelectMode: false, selectedIds: {});
       await loadRecords();
     } catch (e) {
-      state = state.copyWith(errorMessage: '삭제에 실패했습니다.');
+      state = state.copyWith(isDeleting: false, errorMessage: '삭제에 실패했습니다.');
     }
   }
 
