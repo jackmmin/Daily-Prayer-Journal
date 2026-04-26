@@ -66,9 +66,14 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
   }
 
   Future<void> _save() async {
+    final title = _titleCtrl.text.trim();
     final minutes = int.tryParse(_minutesCtrl.text.trim());
     final amount = int.tryParse(_amountCtrl.text.trim());
 
+    if (title.isEmpty) {
+      _showError('계획 이름을 입력해주세요.');
+      return;
+    }
     if (minutes == null || minutes <= 0) {
       _showError('분 단위를 1 이상의 숫자로 입력해주세요.');
       return;
@@ -78,9 +83,19 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
       return;
     }
 
+    // 중복 이름 검사 (수정 시 자기 자신 제외)
+    final plans = ref.read(bankPlanProvider).valueOrNull ?? [];
+    final isDuplicate = plans.any(
+      (p) => p.title == title && p.id != widget.plan?.id,
+    );
+    if (isDuplicate) {
+      _showError('이미 같은 이름의 계획이 있습니다.');
+      return;
+    }
+
     final plan = BankPlan(
       id: widget.plan?.id,
-      title: _titleCtrl.text.trim(),
+      title: title,
       startDate: _startDate,
       endDate: _endDate,
       minutes: minutes,
@@ -135,7 +150,7 @@ class _BankPlanFormSheetState extends ConsumerState<BankPlanFormSheet> {
             maxLength: 20,
             inputFormatters: [LengthLimitingTextInputFormatter(20)],
             decoration: const InputDecoration(
-              labelText: '계획 이름 (선택, 최대 20자)',
+              labelText: '계획 이름 (필수, 최대 20자)',
               hintText: '예) 새벽기도 100일',
               isDense: true,
               border: OutlineInputBorder(),
