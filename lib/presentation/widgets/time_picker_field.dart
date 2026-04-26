@@ -60,6 +60,8 @@ class TimePickerField extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => DateTimePickerSheet(initial: base),
     );
+    // 바텀시트 닫힌 후 포커스가 이전 필드로 복원되어 next 액션이 트리거되는 것을 방지
+    if (context.mounted) FocusScope.of(context).unfocus();
     if (result != null) onChanged(result);
   }
 }
