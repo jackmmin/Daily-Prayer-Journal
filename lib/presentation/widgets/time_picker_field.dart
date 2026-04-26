@@ -51,8 +51,8 @@ class TimePickerField extends StatelessWidget {
   }
 
   Future<void> _pickDateTime(BuildContext context) async {
-    // 바텀시트 오픈 전 포커스 해제 — 시트가 닫힐 때 textInputAction.next 트리거 방지
-    FocusScope.of(context).unfocus();
+    // 바텀시트 오픈 전 포커스 완전 해제
+    FocusManager.instance.primaryFocus?.unfocus();
     final base = time ?? DateTime.now();
     final result = await showModalBottomSheet<DateTime>(
       context: context,
@@ -60,8 +60,10 @@ class TimePickerField extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => DateTimePickerSheet(initial: base),
     );
-    // 바텀시트 닫힌 후 포커스가 이전 필드로 복원되어 next 액션이 트리거되는 것을 방지
-    if (context.mounted) FocusScope.of(context).unfocus();
+    if (!context.mounted) return;
+    // 바텀시트 닫힌 후 Flutter가 포커스를 복원하기 전에 강제로 해제
+    // — textInputAction.next 자동 이동 방지
+    FocusManager.instance.primaryFocus?.unfocus();
     if (result != null) onChanged(result);
   }
 }

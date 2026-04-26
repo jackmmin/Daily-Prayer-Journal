@@ -28,6 +28,10 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
+  final _titleFocusNode = FocusNode();
+  // skipTraversal: true — textInputAction.next 자동 traversal로 이 필드에 도달하지 못하게 차단
+  // onFieldSubmitted에서 명시적으로 이동시킴
+  final _contentFocusNode = FocusNode(skipTraversal: true);
 
   late DateTime _startTime;
   DateTime? _endTime;
@@ -61,6 +65,8 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    _titleFocusNode.dispose();
+    _contentFocusNode.dispose();
     super.dispose();
   }
 
@@ -159,6 +165,7 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
         final count = value.text.characters.length;
         return TextFormField(
           controller: _titleController,
+          focusNode: _titleFocusNode,
           decoration: InputDecoration(
             labelText: '기도 제목 * (최대 20자)',
             prefixIcon: const Icon(Icons.title),
@@ -173,6 +180,8 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
           // maxLength 미사용: EmojiLengthFormatter가 grapheme 단위로 제한
           inputFormatters: const [EmojiLengthFormatter(20)],
           textInputAction: TextInputAction.next,
+          // onFieldSubmitted로 명시 제어 — 자동 포커스 이동 방지
+          onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_contentFocusNode),
           validator: (v) => (v == null || v.trim().isEmpty) ? '기도 제목을 입력해주세요' : null,
         );
       },
@@ -186,6 +195,7 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
         final count = value.text.characters.length;
         return TextFormField(
           controller: _contentController,
+          focusNode: _contentFocusNode,
           decoration: InputDecoration(
             labelText: '기도 내용',
             prefixIcon: const Icon(Icons.edit_note),
