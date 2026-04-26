@@ -22,7 +22,12 @@ class DateRangeSelectorBar extends StatelessWidget {
 
   static final _fmt = DateFormat('M월 d일', 'ko');
 
-  String get _label => '${_fmt.format(startDate)} ~ ${_fmt.format(endDate)}';
+  String get _label {
+    final s = _fmt.format(startDate);
+    final e = _fmt.format(endDate);
+    // 같은 날짜면 단일 날짜만 표시
+    return s == e ? s : '$s ~ $e';
+  }
 
   @override
   Widget build(BuildContext context) {
