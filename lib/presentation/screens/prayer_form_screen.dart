@@ -56,8 +56,8 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
       _startTime = base != null
           ? DateTime(base.year, base.month, base.day, now.hour, now.minute)
           : now;
-      // 직접입력 필수값이므로 기본 종료시간은 시작시간+1분
-      _endTime = _startTime.add(const Duration(minutes: 1));
+      // 종료시간도 시작시간과 동일하게 초기화
+      _endTime = _startTime;
       _manualTimeEdited = true;
     }
   }
@@ -77,12 +77,11 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
     final state = ref.watch(vmProvider);
     final vm = ref.read(vmProvider.notifier);
 
-    // 저장 완료 시 토스트 표시 후 화면 닫기
+    // 저장 완료 시 결과값(true) 전달 후 화면 닫기 — 토스트는 이전 화면에서 표시
     ref.listen(vmProvider, (previous, next) {
       if (!context.mounted) return;
       if (!previous!.isSaved && next.isSaved) {
-        showInfoToast(context, '저장되었습니다.');
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
       }
       if (next.errorMessage != null) {
         showErrorToast(context, next.errorMessage!);

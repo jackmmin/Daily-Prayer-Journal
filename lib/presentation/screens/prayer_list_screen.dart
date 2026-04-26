@@ -241,7 +241,7 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
     final selectedDate = record == null
         ? ref.read(prayerListViewModelProvider(_bankPlanId)).startDate
         : null;
-    await Navigator.of(context).push(
+    final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => PrayerFormScreen(
           editingRecord: record,
@@ -250,6 +250,9 @@ class _PrayerListScreenState extends ConsumerState<PrayerListScreen> {
         ),
       ),
     );
+    if (saved == true && context.mounted) {
+      showInfoToast(context, '저장되었습니다.');
+    }
     ref.read(prayerListViewModelProvider(_bankPlanId).notifier).loadRecords();
     ref.invalidate(planSavingsProvider);
   }
