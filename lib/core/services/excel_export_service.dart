@@ -70,11 +70,13 @@ class ExcelExportService {
     // ── 파일 저장 ─────────────────────────────────────────────────────────────
     final tmpDir = await getTemporaryDirectory();
     final timestamp = _filenameDateFmt.format(DateTime.now());
-    final rawLabel = plan.title.isNotEmpty ? plan.title : _dateFmt.format(plan.startDate);
-    // 파일명에 이모지/특수문자 포함 시 일부 OS에서 오류 → ASCII+한글만 허용
-    final planLabel = rawLabel.replaceAll(RegExp(r'[^\w가-힣＀-￯\s\-]'), '').trim();
-    final safeLabel = planLabel.isNotEmpty ? planLabel : _dateFmt.format(plan.startDate);
-    final fileName = '기도일지_${safeLabel}_$timestamp.xlsx';
+    final dateRange = '${_dateFmt.format(plan.startDate)}-${_dateFmt.format(plan.endDate)}';
+    // 이모지/특수문자 제거 후 순수 텍스트만 추출
+    final strippedTitle = plan.title.replaceAll(RegExp(r'[^\w가-힣＀-￯\s\-]'), '').trim();
+    // 이모지만 있는 경우 title 생략, 날짜 범위만 사용
+    final fileName = strippedTitle.isNotEmpty
+        ? '기도일지_${strippedTitle}_${dateRange}_$timestamp.xlsx'
+        : '기도일지_${dateRange}_$timestamp.xlsx';
     final filePath = '${tmpDir.path}/$fileName';
 
     final bytes = excel.encode();
@@ -86,7 +88,7 @@ class ExcelExportService {
     // ── 공유 시트 ─────────────────────────────────────────────────────────────
     await Share.shareXFiles(
       [XFile(filePath, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
-      subject: '기도일지 - $safeLabel',
+      subject: strippedTitle.isNotEmpty ? '기도일지 - ${strippedTitle}_$dateRange' : '기도일지 - $dateRange',
     );
   }
 
