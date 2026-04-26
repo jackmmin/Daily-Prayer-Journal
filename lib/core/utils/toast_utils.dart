@@ -5,6 +5,7 @@ void _showOverlayToast(
   BuildContext context,
   String message, {
   Color backgroundColor = const Color(0xFF323232),
+  Color textColor = Colors.white,
   Duration duration = const Duration(seconds: 2),
   Widget? leading,
 }) {
@@ -28,14 +29,13 @@ void _showOverlayToast(
           ),
           child: leading != null
               ? Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     leading,
                     const SizedBox(width: 8),
-                    Expanded(child: Text(message, style: const TextStyle(color: Color(0xFF333333)))),
+                    Expanded(child: Text(message, style: TextStyle(color: textColor))),
                   ],
                 )
-              : Text(message, style: const TextStyle(color: Color(0xFF333333))),
+              : Text(message, style: TextStyle(color: textColor)),
         ),
       ),
     ),
@@ -53,6 +53,7 @@ void showSuccessToast(BuildContext context, String message, {Duration duration =
     context,
     message,
     backgroundColor: const Color(0xFFD4EDDA),
+    textColor: const Color(0xFF155724),
     duration: duration,
     leading: const Icon(Icons.check_circle_outline, color: Color(0xFF28A745), size: 18),
   );
@@ -64,6 +65,7 @@ void showErrorToast(BuildContext context, String message) {
     context,
     message,
     backgroundColor: const Color(0xFFF8D7DA),
+    textColor: const Color(0xFF721C24),
     leading: const Icon(Icons.error_outline, color: Color(0xFFDC3545), size: 18),
   );
 }
@@ -74,6 +76,7 @@ void showWarningToast(BuildContext context, String message, {Duration duration =
     context,
     message,
     backgroundColor: const Color(0xFFFFF3CD),
+    textColor: const Color(0xFF856404),
     duration: duration,
     leading: const Icon(Icons.warning_amber_outlined, color: Color(0xFFFFC107), size: 18),
   );
