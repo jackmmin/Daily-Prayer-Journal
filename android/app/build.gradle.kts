@@ -1,8 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// android/key.properties에서 서명 정보 로드
+val keyPropertiesFile = rootProject.file("key.properties")
+val keyProperties = Properties()
+if (keyPropertiesFile.exists()) {
+    keyPropertiesFile.inputStream().use { keyProperties.load(it) }
 }
 
 android {
@@ -18,7 +27,17 @@ android {
     }
 
     kotlinOptions {
+        @Suppress("DEPRECATION")
         jvmTarget = javaVersion.toString()
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = keyProperties.getProperty("storeFile")?.let { file(it) }
+            storePassword = keyProperties.getProperty("storePassword")
+            keyAlias = keyProperties.getProperty("keyAlias")
+            keyPassword = keyProperties.getProperty("keyPassword")
+        }
     }
 
     defaultConfig {
@@ -34,9 +53,11 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (keyPropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug") // key.properties 없을 때 fallback
+            }
             // R8/ProGuard: 코드 축소 및 최적화로 APK 용량 감소
             isMinifyEnabled = true
             isShrinkResources = true
@@ -47,13 +68,10 @@ android {
         }
     }
 
-    // ABI별 APK 분리: arm64-v8a 단독 APK는 전체 대비 약 40% 용량 감소
+    // ABI splits는 assembleRelease(APK)용. bundleRelease(App Bundle) 시 충돌하므로 비활성화
     splits {
         abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64")
-            isUniversalApk = true
+            isEnable = false
         }
     }
 }
@@ -66,7 +84,7 @@ flutter {
 // finalizedBy로 후속 Task를 등록해 Flutter 복사 완료 후 rename 수행
 val renameReleaseApk = tasks.register("renameReleaseApk") {
     doLast {
-        val apkDir = file("${buildDir}/outputs/flutter-apk")
+        val apkDir = file("${layout.buildDirectory.get()}/outputs/flutter-apk")
         val versionName = android.defaultConfig.versionName ?: "unknown"
         if (apkDir.exists()) {
             apkDir.listFiles()
