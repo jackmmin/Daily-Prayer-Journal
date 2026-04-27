@@ -45,6 +45,14 @@ class ExcelImportService {
       return const ImportResult.failure('엑셀 파일(.xlsx, .xls)만 허용됩니다.');
     }
 
+    // 파일 크기 20MB 제한 (OOM 방지)
+    if (file.path != null) {
+      final fileSize = File(file.path!).lengthSync();
+      if (fileSize > 20 * 1024 * 1024) {
+        return const ImportResult.failure('파일 크기가 너무 큽니다 (최대 20MB).');
+      }
+    }
+
     final bytes = file.bytes ?? (file.path != null ? File(file.path!).readAsBytesSync() : null);
     if (bytes == null) {
       return const ImportResult.failure('파일을 읽을 수 없습니다.');
@@ -94,11 +102,11 @@ class ExcelImportService {
       if (endDate == null) {
         return const ImportResult.failure('종료일 데이터가 올바르지 않습니다.');
       }
-      if (minutes == null || minutes <= 0) {
-        return const ImportResult.failure('기도 기준(분) 데이터가 올바르지 않습니다.');
+      if (minutes == null || minutes < 0 || minutes > 1440) {
+        return const ImportResult.failure('기도 기준(분) 데이터가 올바르지 않습니다. (0~1440분)');
       }
-      if (amount == null || amount <= 0) {
-        return const ImportResult.failure('적립 금액 데이터가 올바르지 않습니다.');
+      if (amount == null || amount < 0 || amount > 10000000000) {
+        return const ImportResult.failure('적립 금액 데이터가 올바르지 않습니다. (0~100억원)');
       }
 
       return ImportResult.success(BankPlan(
@@ -199,10 +207,16 @@ class ExcelImportService {
 
     await File(filePath).writeAsBytes(bytes);
 
+    final sampleFile = File(filePath);
     await Share.shareXFiles(
       [XFile(filePath, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
       subject: '기도일지 샘플 파일',
     );
+
+    // 공유 완료 후 임시 파일 삭제 (개인정보 보호)
+    try {
+      await sampleFile.delete();
+    } catch (_) {}
   }
 
   static DateTime? _parseDate(String? raw) {

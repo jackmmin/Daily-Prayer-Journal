@@ -90,6 +90,11 @@ class ExcelExportService {
       [XFile(filePath, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
       subject: strippedTitle.isNotEmpty ? '기도일지 - ${strippedTitle}_$dateRange' : '기도일지 - $dateRange',
     );
+
+    // 공유 완료 후 임시 파일 삭제 (개인정보 보호)
+    try {
+      await file.delete();
+    } catch (_) {}
   }
 
   static void _writePlanSummary(Excel excel, BankPlan plan, List<PrayerRecord> records) {

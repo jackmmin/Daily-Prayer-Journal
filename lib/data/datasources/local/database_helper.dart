@@ -127,7 +127,11 @@ class DatabaseHelper {
         ''');
         final rows = await txn.query('prayer_records');
         for (final row in rows) {
-          final text = row['content'] as String;
+          // v5 이하에서 content가 TEXT 또는 BLOB일 수 있으므로 타입 안전하게 처리
+          final rawContent = row['content'];
+          final text = rawContent is String
+              ? rawContent
+              : utf8.decode(List<int>.from(rawContent as List));
           final bytes = utf8.encode(text);
           // 500 bytes 초과 시 gzip 압축
           final blob = bytes.length > 500 ? GZipCodec().encode(bytes) : bytes;
