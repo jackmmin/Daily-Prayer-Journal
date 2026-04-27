@@ -1,6 +1,7 @@
 # 기도통장 (Daily Prayer)
 
-하루의 기도를 기록하는 Flutter 앱입니다.
+하루의 기도를 기록하는 앱입니다.<br>
+기록되는 시간만큼 금액이 적립됩니다.
 
 ## UPDATE_HISTORY
 [![Static Badge](https://img.shields.io/badge/UPDATE_HISTORY-Link-blue)](UPDATE_HISTORY.md)
