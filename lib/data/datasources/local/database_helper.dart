@@ -53,13 +53,13 @@ class DatabaseHelper {
     // v2 → v3: bank_plans.title 컬럼 추가
     if (oldVersion < 3) {
       await db.execute(
-        "ALTER TABLE ${BankPlanModel.tableName} ADD COLUMN ${BankPlanModel.columnTitle} TEXT NOT NULL DEFAULT ''",
+        'ALTER TABLE ${BankPlanModel.tableName} ADD COLUMN ${BankPlanModel.columnTitle} TEXT NOT NULL DEFAULT \'\'',
       );
     }
     // v3 → v4: prayer_records.bank_plan_id 컬럼 추가 (계획별 일지 분리)
     if (oldVersion < 4) {
       await db.execute(
-        "ALTER TABLE ${PrayerRecordModel.tableName} ADD COLUMN ${PrayerRecordModel.columnBankPlanId} INTEGER",
+        'ALTER TABLE ${PrayerRecordModel.tableName} ADD COLUMN ${PrayerRecordModel.columnBankPlanId} INTEGER',
       );
     }
     // v4 → v5: created_at 제거 + 타임스탬프 seconds 단위 변환
