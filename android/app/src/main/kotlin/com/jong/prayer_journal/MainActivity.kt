@@ -1,4 +1,4 @@
-package com.example.prayer_journal
+package com.jong.prayer_journal
 
 import io.flutter.embedding.android.FlutterActivity
 
