@@ -22,7 +22,8 @@ class _DateTimePickerSheetState extends State<DateTimePickerSheet> {
   late FixedExtentScrollController _minuteCtrl;
 
   static const int _yearBase = 2000;
-  static const int _yearCount = 51; // 2000~2050
+  // 현재 연도 기준 +1년까지 표시 (매년 자동 확장)
+  static int get _yearCount => DateTime.now().year - _yearBase + 2;
 
   @override
   void initState() {
