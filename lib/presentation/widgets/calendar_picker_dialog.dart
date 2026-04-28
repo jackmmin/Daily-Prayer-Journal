@@ -67,10 +67,13 @@ class _CalendarPickerDialogState extends ConsumerState<CalendarPickerDialog> {
     super.initState();
     _focused = widget.selectedDate;
     _rangeStart = widget.selectedDate;
-    // 이전에 설정된 범위가 있으면 복원하고 시작 날짜 재선택 단계로 시작
-    if (widget.selectedEndDate != null &&
-        !widget.selectedEndDate!.isAtSameMomentAs(widget.selectedDate)) {
-      _rangeEnd = widget.selectedEndDate;
+    final end = widget.selectedEndDate;
+    if (end != null && !end.isAtSameMomentAs(widget.selectedDate)) {
+      // 시작/종료가 다른 날짜 범위 → 복원하고 시작 날짜 재선택 단계로 시작
+      _rangeEnd = end;
+      _pickingEnd = false;
+    } else {
+      // 단일 날짜 조회 → 첫 탭이 새 시작 날짜 선택이 되도록 시작 날짜 재선택 단계로 시작
       _pickingEnd = false;
     }
     _loadPreview(widget.selectedDate);
