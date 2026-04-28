@@ -22,7 +22,7 @@ class _DateTimePickerSheetState extends State<DateTimePickerSheet> {
   late FixedExtentScrollController _minuteCtrl;
 
   static const int _yearBase = 2000;
-  static const int _yearCount = 30; // 2000~2029
+  static const int _yearCount = 51; // 2000~2050
 
   @override
   void initState() {
