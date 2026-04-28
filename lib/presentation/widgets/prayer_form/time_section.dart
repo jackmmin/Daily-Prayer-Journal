@@ -119,8 +119,8 @@ class _PrayerTimeSectionState extends State<PrayerTimeSection> {
                   time: widget.startTime,
                   onChanged: (t) {
                     widget.onStartTimeChanged(t);
-                    // 종료 시간이 시작 시간보다 앞서면 시작+1분으로 자동 보정
-                    if (widget.endTime != null && widget.endTime!.isBefore(t)) {
+                    // 종료 시간이 시작 시간 이하면 시작+1분으로 자동 보정
+                    if (widget.endTime != null && !widget.endTime!.isAfter(t)) {
                       widget.onEndTimeChanged(t.add(const Duration(minutes: 1)));
                     }
                   },

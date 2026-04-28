@@ -53,11 +53,16 @@ class _PrayerFormScreenState extends ConsumerState<PrayerFormScreen> {
       final now = DateTime.now();
       final base = widget.initialDate;
       // 선택된 날짜가 있으면 해당 날짜 + 현재 시각, 없으면 현재 시각
-      _startTime = base != null
-          ? DateTime(base.year, base.month, base.day, now.hour, now.minute)
-          : now;
-      // 종료시간도 시작시간과 동일하게 초기화
-      _endTime = _startTime;
+      // 초를 버리고 분 단위로 초기화 — prayerDuration 계산이 분 단위이므로 초가 섞이면 0분 오류 발생
+      final startBase = DateTime(
+        base != null ? base.year : now.year,
+        base != null ? base.month : now.month,
+        base != null ? base.day : now.day,
+        now.hour,
+        now.minute,
+      );
+      _startTime = startBase;
+      _endTime = startBase;
       _manualTimeEdited = true;
     }
   }
